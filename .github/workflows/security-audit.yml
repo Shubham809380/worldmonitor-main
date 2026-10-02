@@ -56,7 +56,7 @@ jobs:
             package_json: workers/railway-reconcile-control/package.json
             lockfile: workers/railway-reconcile-control/package-lock.json
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The introduced-vs-inherited split needs the base commit in the object
       # DB. checkout leaves a shallow merge ref, so fetch just that one commit.
       - name: Fetch base commit
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
