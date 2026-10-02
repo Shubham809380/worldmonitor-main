@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WM SecureScan — Evidence-Driven Security Assessment</title>
+    <meta
+      name="description"
+      content="WM SecureScan performs authorized security assessments with evidence-backed findings, an auditable trail, and honest reporting of what was and was not tested."
+    />
+    <meta name="theme-color" content="#05080a" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="canonical" href="https://www.worldmonitor.app/securescan" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WM SecureScan" />
+    <meta property="og:title" content="WM SecureScan — Evidence-Driven Security Assessment" />
+    <meta
+      property="og:description"
+      content="Authorized security assessment with evidence-backed findings, remediation, retesting, and auditable reporting."
+    />
+    <meta property="og:url" content="https://www.worldmonitor.app/securescan" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="robots" content="noindex, nofollow" />
+    <style>
+      /* Shell styles only. The design system is bundled by src/securescan-main.ts
+         and swaps in on boot. These rules exist so the pre-JS frame is the same
+         near-black the app boots into, rather than a white flash. */
+      html { background: #05080a; }
+      body { margin: 0; background: #05080a; color: #e8eef2; }
+      #ss-boot {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        font: 14px/1.55 "Inter", "Segoe UI", system-ui, sans-serif;
+        color: #7c8b98;
+      }
+      #ss-boot .ss-boot__inner {
+        display: grid;
+        gap: 12px;
+        justify-items: center;
+        max-width: 34ch;
+        text-align: center;
+      }
+      #ss-boot .ss-boot__bar {
+        width: 160px;
+        height: 3px;
+        border-radius: 999px;
+        background: #131a22;
+        overflow: hidden;
+      }
+      #ss-boot .ss-boot__bar::after {
+        content: "";
+        display: block;
+        width: 34%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, #22c55e, transparent);
+        animation: ss-boot-sweep 1.4s cubic-bezier(0.2, 0, 0, 1) infinite;
+      }
+      @keyframes ss-boot-sweep {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(320%); }
+      }
+      /* A failed boot must explain itself instead of spinning forever. */
+      #ss-boot.ss-boot--failed .ss-boot__bar { display: none; }
+      #ss-boot.ss-boot--failed::before { content: "!"; color: #ffa8b6; }
+      #ss-boot.ss-boot--failed .ss-boot__inner::after {
+        content: "The console failed to load. Reload the page, and check the browser console if it persists.";
+        color: #ffa8b6;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #ss-boot .ss-boot__bar::after { animation: none; width: 100%; opacity: 0.4; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ss-boot">
+      <div class="ss-boot__inner">
+        <strong style="color:#e8eef2">WM SecureScan</strong>
+        <div class="ss-boot__bar" aria-hidden="true"></div>
+        <span>Loading the security console…</span>
+      </div>
+    </div>
+    <div id="ss-root"></div>
+    <!-- The CSP nonce is load-bearing: `script-src` uses 'strict-dynamic', so
+         this module script is what authorises the rest of the bundle. -->
+    <script type="module" src="/src/securescan-main.ts" nonce="wm-static-bootstrap"></script>
+  </body>
+</html>

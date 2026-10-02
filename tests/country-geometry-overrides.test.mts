@@ -1,0 +1,197 @@
+import { afterEach, describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+const originalFetch = globalThis.fetch;
+const originalAbortSignalTimeout = AbortSignal.timeout;
+
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function installFastAbortTimeout(delayMs = 5): void {
+  Object.defineProperty(AbortSignal, 'timeout', {
+    configurable: true,
+    writable: true,
+    value: () => {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), delayMs);
+      return ctrl.signal;
+    },
+  });
+}
+
+function restoreGlobals(): void {
+  globalThis.fetch = originalFetch;
+  Object.defineProperty(AbortSignal, 'timeout', {
+    configurable: true,
+    writable: true,
+    value: originalAbortSignalTimeout,
+  });
+}
+
+async function loadFreshCountryGeometryModule() {
+  return import(`../src/services/country-geometry.ts?test=${Date.now()}-${Math.random()}`);
+}
+
+function makeFeatureCollection(maxCoord: number) {
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {
+          name: 'Pakistan',
+          'ISO3166-1-Alpha-2': 'PK',
+          'ISO3166-1-Alpha-3': 'PAK',
+        },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[
+            [0, 0],
+            [maxCoord, 0],
+            [maxCoord, maxCoord],
+            [0, maxCoord],
+            [0, 0],
+          ]],
+        },
+      },
+    ],
+  };
+}
+
+afterEach(() => {
+  restoreGlobals();
+});
+
+describe('country geometry political overrides', () => {
+  it('rewrites CN-TW feature properties to TW and indexes under TW', async () => {
+    globalThis.fetch = ((input: string | URL | Request) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === '/data/countries.geojson') {
+        return Promise.resolve(jsonResponse({
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: {
+                name: 'Taiwan',
+                'ISO3166-1-Alpha-2': 'CN-TW',
+                'ISO3166-1-Alpha-3': 'TWN',
+              },
+              geometry: {
+                type: 'Polygon',
+                coordinates: [[[120, 22], [122, 22], [122, 25], [120, 25], [120, 22]]],
+              },
+            },
+          ],
+        }));
+      }
+      if (url === 'https://maps.worldmonitor.app/country-boundary-overrides.geojson') {
+        return Promise.resolve(jsonResponse({ type: 'FeatureCollection', features: [] }));
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    }) as typeof fetch;
+
+    const countryGeometry = await loadFreshCountryGeometryModule();
+    await countryGeometry.preloadCountryGeometry();
+
+    assert.equal(countryGeometry.canonicalizeCountryCode('CN-TW'), 'TW');
+    assert.equal(countryGeometry.canonicalizeCountryCode('tw'), 'TW');
+    assert.equal(countryGeometry.canonicalizeCountryCode('JP'), 'JP');
+    assert.deepEqual(countryGeometry.getCountryAtCoordinates(23.5, 121), {
+      code: 'TW',
+      name: 'Taiwan',
+    });
+    const geojson = await countryGeometry.getCountriesGeoJson();
+    assert.equal(geojson?.features[0]?.properties?.['ISO3166-1-Alpha-2'], 'TW');
+    assert.equal(countryGeometry.hasCountryGeometry('TW'), true);
+    assert.equal(countryGeometry.hasCountryGeometry('CN-TW'), false);
+  });
+});
+
+describe('country geometry overrides', () => {
+  it('loads bundled geometry when override fetch times out', async () => {
+    installFastAbortTimeout();
+    let overrideAborted = false;
+
+    globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === '/data/countries.geojson') {
+        return Promise.resolve(jsonResponse(makeFeatureCollection(1)));
+      }
+      if (url === 'https://maps.worldmonitor.app/country-boundary-overrides.geojson') {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            overrideAborted = true;
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          }, { once: true });
+        });
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    }) as typeof fetch;
+
+    const countryGeometry = await loadFreshCountryGeometryModule();
+    const start = Date.now();
+    await countryGeometry.preloadCountryGeometry();
+    const elapsedMs = Date.now() - start;
+
+    assert.equal(overrideAborted, true);
+    assert.ok(elapsedMs < 2000, `Expected preload to complete within timeout, got ${elapsedMs}ms`);
+    assert.deepEqual(countryGeometry.getCountryBbox('PK'), [0, 0, 1, 1]);
+  });
+
+  it('applies override geometry when the CDN responds in time', async () => {
+    globalThis.fetch = ((input: string | URL | Request) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === '/data/countries.geojson') {
+        return Promise.resolve(jsonResponse(makeFeatureCollection(1)));
+      }
+      if (url === 'https://maps.worldmonitor.app/country-boundary-overrides.geojson') {
+        return Promise.resolve(jsonResponse(makeFeatureCollection(2)));
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    }) as typeof fetch;
+
+    const countryGeometry = await loadFreshCountryGeometryModule();
+    await countryGeometry.preloadCountryGeometry();
+
+    assert.deepEqual(countryGeometry.getCountryBbox('PK'), [0, 0, 2, 2]);
+    assert.deepEqual(countryGeometry.getCountryAtCoordinates(1.5, 1.5), {
+      code: 'PK',
+      name: 'Pakistan',
+    });
+  });
+});
+
+describe('country geometry recovery', () => {
+  for (const failure of ['network', 'http', 'invalid', 'index'] as const) {
+    it(`retries after ${failure} failure and shares concurrent loads`, async () => {
+      let requests = 0;
+      globalThis.fetch = (async (input) => {
+        if (String(input) !== '/data/countries.geojson') return jsonResponse(makeFeatureCollection(2));
+        requests++;
+        if (requests === 1) {
+          if (failure === 'network') throw new Error('offline');
+          if (failure === 'http') return new Response('', { status: 503 });
+          if (failure === 'index') return jsonResponse({ type: 'FeatureCollection', features: [...makeFeatureCollection(1).features, null] });
+          return jsonResponse({ type: 'invalid' });
+        }
+        return jsonResponse(makeFeatureCollection(1));
+      }) as typeof fetch;
+      const geometry = await loadFreshCountryGeometryModule();
+      await Promise.all([geometry.preloadCountryGeometry(), geometry.preloadCountryGeometry()]);
+      assert.equal(requests, 1);
+      assert.equal(geometry.isCountryGeometryLoaded(), false);
+      assert.equal(geometry.nameToCountryCode('Pakistan'), null);
+      await Promise.all([geometry.preloadCountryGeometry(), geometry.getCountriesGeoJson()]);
+      assert.equal(requests, 2);
+      assert.equal(geometry.isCountryGeometryLoaded(), true);
+      assert.equal(geometry.getCountryAtCoordinates(1.5, 1.5)?.code, 'PK');
+      await geometry.preloadCountryGeometry();
+      assert.equal(requests, 2, 'successful data remains cached');
+    });
+  }
+});

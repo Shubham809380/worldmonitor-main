@@ -1,0 +1,1155 @@
+/* WM SecureScan — authenticated product shell
+ *
+ * Styles for the signed-in view: a fixed sidebar, a top bar, and a page slot.
+ * Everything here reads the tokens in `tokens.css` — no literal colour appears
+ * below — so re-skinning the product shell means editing that one file, the same
+ * contract the auth surface already honours.
+ *
+ * Naming: every class is `wga-` (WorldGuard App) to stay clear of the `wg-`
+ * surface tokens and the `ss-` (SecureScan) stylesheet. The two documents ship
+ * separately, but a shared class name across them would be a trap the next
+ * person would not see coming.
+ *
+ * Contrast: text tones come straight from the token set, which is documented at
+ * 4.5:1 or better against the card surface. Status colours are the one place
+ * this file adds its own values, and each is paired with a label — `Available`,
+ * `Not connected`, `Coming soon` — so colour is never the only carrier of
+ * meaning. The interactive focus ring matches the auth surface (2px solid, green)
+ * because an inconsistent ring is a regression a reader feels before they notice.
+ */
+
+.wga-layout {
+  display: grid;
+  /* `minmax(0, 1fr)`, not `1fr`. A `1fr` track's automatic minimum is min-content,
+     so one wide child — the twelve-link nav row on a phone — would push the
+     track past the viewport and make the whole page scroll sideways. */
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--wg-page-bg);
+  color: var(--wg-text);
+  font-family: var(--wg-font);
+  font-size: var(--wg-text-base);
+  line-height: 1.5;
+}
+
+/* ---- Skip link ---------------------------------------------------------- */
+
+.wga-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: var(--wg-space-2);
+  z-index: 40;
+  padding: var(--wg-space-2) var(--wg-space-4);
+  background: var(--wg-card-bg);
+  color: var(--wg-text);
+  border: 1px solid var(--wg-green);
+  border-radius: var(--wg-radius-sm);
+  text-decoration: none;
+}
+
+.wga-skip-link:focus {
+  left: var(--wg-space-2);
+  outline: 2px solid var(--wg-green);
+  outline-offset: 2px;
+}
+
+/* ---- Sidebar ------------------------------------------------------------ */
+
+.wga-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-5);
+  padding: var(--wg-space-5) var(--wg-space-3);
+  background: var(--wg-card-bg);
+  border-right: 1px solid var(--wg-border);
+  /* Sticky rather than fixed: the nav stays reachable on a long page without
+     the sidebar needing its own scroll container, which would trap the wheel
+     on small viewports. */
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.wga-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  padding: 0 var(--wg-space-2);
+}
+
+.wga-sidebar__mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--wg-radius-sm);
+  background: var(--wg-green-tint);
+  color: var(--wg-green);
+}
+
+.wga-sidebar__names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wga-sidebar__product {
+  font-size: var(--wg-text-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.wga-sidebar__tagline {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wga-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-4);
+  flex: 1;
+  /* A flex item's automatic minimum size is its min-content size, so without
+     this the twelve nowrap links set the floor and `overflow-x: auto` below
+     never engages. */
+  min-width: 0;
+}
+
+.wga-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-1);
+}
+
+.wga-nav__group-label {
+  padding: 0 var(--wg-space-2) var(--wg-space-1);
+  font-size: var(--wg-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wg-text-dim);
+}
+
+.wga-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wga-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  min-height: 38px;
+  padding: var(--wg-space-2) var(--wg-space-2);
+  border-radius: var(--wg-radius-sm);
+  color: var(--wg-text-label);
+  text-decoration: none;
+  transition: background var(--wg-transition-fast), color var(--wg-transition-fast);
+}
+
+.wga-nav__link:hover {
+  background: var(--wg-surface-raised);
+  color: var(--wg-text);
+}
+
+.wga-nav__link:focus-visible {
+  outline: 2px solid var(--wg-green);
+  outline-offset: 2px;
+}
+
+.wga-nav__link--active {
+  background: var(--wg-green-tint);
+  color: var(--wg-text);
+  /* A left rail, not colour alone: the active item stays identifiable when the
+     green is hard to see against the card surface. */
+  box-shadow: inset 2px 0 0 var(--wg-green);
+}
+
+.wga-nav__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--wg-text-muted);
+}
+
+.wga-nav__link--active .wga-nav__icon {
+  color: var(--wg-green);
+}
+
+.wga-nav__label {
+  font-size: var(--wg-text-sm);
+  font-weight: 500;
+}
+
+.wga-sidebar__foot {
+  padding: var(--wg-space-3) var(--wg-space-2) 0;
+  border-top: 1px solid var(--wg-border);
+}
+
+.wga-sidebar__account {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+}
+
+.wga-sidebar__account-name {
+  font-size: var(--wg-text-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wga-sidebar__account-email {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Main column -------------------------------------------------------- */
+
+.wga-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wga-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wg-space-4);
+  min-height: 60px;
+  padding: var(--wg-space-2) var(--wg-space-5);
+  background: color-mix(in srgb, var(--wg-page-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--wg-border);
+}
+
+.wga-topbar__start,
+.wga-topbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  min-width: 0;
+}
+
+.wga-workspace {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-2);
+  padding: var(--wg-space-1) var(--wg-space-3);
+  min-height: 32px;
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-sm);
+  background: var(--wg-card-bg);
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wga-workspace__icon {
+  display: grid;
+  place-items: center;
+  color: var(--wg-text-muted);
+}
+
+.wga-workspace__value {
+  font-size: var(--wg-text-sm);
+  font-weight: 600;
+  color: var(--wg-text);
+}
+
+.wga-plan {
+  display: flex;
+  align-items: baseline;
+  gap: var(--wg-space-2);
+  padding: var(--wg-space-1) var(--wg-space-3);
+  min-height: 32px;
+  border: 1px solid var(--wg-border);
+  border-radius: 999px;
+  background: var(--wg-card-bg);
+}
+
+.wga-plan__label {
+  font-size: var(--wg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--wg-text-dim);
+}
+
+.wga-plan__value {
+  font-size: var(--wg-text-sm);
+  font-weight: 650;
+  color: var(--wg-success-text);
+}
+
+.wga-plan--lg {
+  padding: var(--wg-space-1) var(--wg-space-4);
+}
+
+.wga-plan--lg .wga-plan__value {
+  font-size: var(--wg-text-md);
+}
+
+/* ---- Account menu ------------------------------------------------------- */
+
+.wga-account {
+  position: relative;
+}
+
+.wga-account__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-2);
+  min-height: 36px;
+  padding: var(--wg-space-1) var(--wg-space-2);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-sm);
+  background: var(--wg-card-bg);
+  cursor: pointer;
+  list-style: none;
+}
+
+.wga-account__trigger::-webkit-details-marker {
+  display: none;
+}
+
+.wga-account__trigger:focus-visible {
+  outline: 2px solid var(--wg-green);
+  outline-offset: 2px;
+}
+
+.wga-account__avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--wg-surface-raised);
+  color: var(--wg-text-label);
+}
+
+.wga-account__name {
+  font-size: var(--wg-text-sm);
+  font-weight: 500;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wga-account__chevron {
+  display: grid;
+  place-items: center;
+  color: var(--wg-text-muted);
+  transform: rotate(90deg);
+}
+
+.wga-account[open] .wga-account__chevron {
+  transform: rotate(-90deg);
+}
+
+.wga-account__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--wg-space-2));
+  z-index: 30;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--wg-space-2);
+  background: var(--wg-card-bg);
+  border: 1px solid var(--wg-border-strong);
+  border-radius: var(--wg-radius-md);
+  box-shadow: var(--wg-card-shadow);
+}
+
+.wga-account__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--wg-space-3);
+  margin: 0;
+  padding: var(--wg-space-2) var(--wg-space-3);
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wga-account__row span:last-child {
+  color: var(--wg-text-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wga-account__item {
+  display: block;
+  width: 100%;
+  padding: var(--wg-space-2) var(--wg-space-3);
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--wg-radius-sm);
+  background: transparent;
+  color: var(--wg-text-label);
+  font: inherit;
+  font-size: var(--wg-text-sm);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.wga-account__item:hover {
+  background: var(--wg-surface-raised);
+  color: var(--wg-text);
+}
+
+.wga-account__item:focus-visible {
+  outline: 2px solid var(--wg-green);
+  outline-offset: -2px;
+}
+
+.wga-account__item--danger {
+  color: var(--wg-danger-text);
+}
+
+.wga-account__item--danger:hover {
+  background: var(--wg-danger-bg);
+  color: var(--wg-danger-text);
+}
+
+/* ---- Page slot ---------------------------------------------------------- */
+
+.wga-page {
+  flex: 1;
+  padding: var(--wg-space-6) var(--wg-space-5) var(--wg-space-8);
+}
+
+.wga-page:focus {
+  outline: none;
+}
+
+.wga-page__inner {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.wga-pagehead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--wg-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--wg-space-5);
+}
+
+.wga-pagehead__title {
+  margin: 0;
+  font-size: var(--wg-text-2xl);
+  font-weight: 680;
+  letter-spacing: -0.02em;
+}
+
+.wga-pagehead__sub {
+  margin: var(--wg-space-2) 0 0;
+  max-width: 62ch;
+  color: var(--wg-text-secondary);
+}
+
+.wga-pagehead__actions {
+  display: flex;
+  gap: var(--wg-space-3);
+  flex-wrap: wrap;
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+.wga-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wg-space-2);
+  min-height: 40px;
+  padding: 0 var(--wg-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--wg-radius-md);
+  font: inherit;
+  font-size: var(--wg-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--wg-transition-fast), border-color var(--wg-transition-fast);
+}
+
+.wga-btn:focus-visible {
+  outline: 2px solid var(--wg-green);
+  outline-offset: 2px;
+}
+
+.wga-btn--primary {
+  background: var(--wg-green-gradient);
+  color: var(--wg-on-green);
+}
+
+.wga-btn--primary:hover {
+  background: var(--wg-green);
+}
+
+.wga-btn--ghost {
+  background: transparent;
+  border-color: var(--wg-border-strong);
+  color: var(--wg-text);
+}
+
+.wga-btn--ghost:hover {
+  background: var(--wg-surface-raised);
+}
+
+.wga-btn--danger {
+  background: var(--wg-danger-bg);
+  border-color: var(--wg-danger-border);
+  color: var(--wg-danger-text);
+}
+
+.wga-btn--danger:hover {
+  background: color-mix(in srgb, var(--wg-danger) 22%, transparent);
+}
+
+/* ---- Cards -------------------------------------------------------------- */
+
+.wga-card {
+  padding: var(--wg-space-5);
+  margin-bottom: var(--wg-space-4);
+  background: var(--wg-card-bg);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-lg);
+}
+
+.wga-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wg-space-3);
+  margin-bottom: var(--wg-space-4);
+}
+
+.wga-card__title {
+  margin: 0 0 var(--wg-space-3);
+  font-size: var(--wg-text-lg);
+  font-weight: 640;
+}
+
+.wga-card__head .wga-card__title {
+  margin: 0;
+}
+
+.wga-card__detail {
+  margin: var(--wg-space-3) 0 0;
+  max-width: 68ch;
+  color: var(--wg-text-secondary);
+  font-size: var(--wg-text-sm);
+}
+
+.wga-card--danger {
+  border-color: var(--wg-danger-border);
+}
+
+/* ---- Definition / setting rows ------------------------------------------ */
+
+.wga-defs,
+.wga-settings {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.wga-def,
+.wga-setting {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--wg-space-4);
+  align-items: baseline;
+  padding: var(--wg-space-3) 0;
+  border-bottom: 1px solid var(--wg-border);
+}
+
+.wga-def:last-child,
+.wga-setting:last-child {
+  border-bottom: 0;
+}
+
+.wga-def__key,
+.wga-setting__key {
+  color: var(--wg-text-muted);
+  font-size: var(--wg-text-sm);
+}
+
+.wga-def__val,
+.wga-setting__val {
+  margin: 0;
+  color: var(--wg-text);
+  font-size: var(--wg-text-sm);
+}
+
+/* ---- Tags / badges ------------------------------------------------------ */
+
+.wga-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wg-space-1);
+  margin-left: var(--wg-space-2);
+  padding: 1px var(--wg-space-2);
+  border-radius: 999px;
+  background: var(--wg-surface-raised);
+  color: var(--wg-text-muted);
+  font-size: var(--wg-text-xs);
+  font-weight: 600;
+}
+
+.wga-tag--accent {
+  background: var(--wg-green-tint);
+  color: var(--wg-success-text);
+}
+
+.wga-tag--muted {
+  margin-left: 0;
+}
+
+.wga-mono {
+  font-family: var(--wg-font-mono);
+  font-size: 0.92em;
+}
+
+.wga-count {
+  padding: 1px var(--wg-space-3);
+  border-radius: 999px;
+  background: var(--wg-surface-raised);
+  color: var(--wg-text-label);
+  font-size: var(--wg-text-xs);
+  font-weight: 650;
+}
+
+.wga-readonly {
+  padding: 1px var(--wg-space-3);
+  border: 1px solid var(--wg-border);
+  border-radius: 999px;
+  color: var(--wg-text-muted);
+  font-size: var(--wg-text-xs);
+  font-weight: 600;
+}
+
+/* ---- Notices ------------------------------------------------------------ */
+
+.wga-notice {
+  display: flex;
+  gap: var(--wg-space-3);
+  padding: var(--wg-space-4);
+  margin-bottom: var(--wg-space-4);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-md);
+  background: var(--wg-card-bg);
+}
+
+.wga-notice__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--wg-text-muted);
+}
+
+.wga-notice--locked .wga-notice__icon {
+  color: var(--wg-warn);
+}
+
+.wga-notice__title {
+  margin: 0;
+  font-size: var(--wg-text-base);
+  font-weight: 620;
+}
+
+.wga-notice__detail {
+  margin: var(--wg-space-1) 0 0;
+  color: var(--wg-text-secondary);
+  font-size: var(--wg-text-sm);
+}
+
+.wga-connect {
+  display: flex;
+  gap: var(--wg-space-3);
+  padding: var(--wg-space-4);
+  margin-bottom: var(--wg-space-4);
+  border: 1px solid var(--wg-warn-border);
+  border-radius: var(--wg-radius-md);
+  background: var(--wg-warn-bg);
+}
+
+.wga-connect__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--wg-warn);
+}
+
+.wga-connect__title {
+  margin: 0;
+  font-size: var(--wg-text-base);
+  font-weight: 620;
+}
+
+.wga-connect__detail {
+  margin: var(--wg-space-1) 0 0;
+  max-width: 72ch;
+  color: var(--wg-warn-text);
+  font-size: var(--wg-text-sm);
+}
+
+/* ---- Dashboard ---------------------------------------------------------- */
+
+.wga-dashboard__welcome {
+  margin: 0 0 var(--wg-space-5);
+  color: var(--wg-text-secondary);
+  font-size: var(--wg-text-base);
+}
+
+.wga-dashboard__welcome strong {
+  color: var(--wg-text);
+}
+
+.wga-dashboard__alt {
+  color: var(--wg-text-muted);
+}
+
+.wga-dashboard__block {
+  margin-top: var(--wg-space-6);
+}
+
+.wga-dashboard__block-title {
+  margin: 0 0 var(--wg-space-3);
+  font-size: var(--wg-text-base);
+  font-weight: 620;
+}
+
+.wga-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--wg-space-3);
+  margin-top: var(--wg-space-5);
+}
+
+.wga-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-1);
+  padding: var(--wg-space-4);
+  background: var(--wg-card-bg);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-md);
+}
+
+.wga-stat__label {
+  font-size: var(--wg-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wg-text-dim);
+}
+
+.wga-stat__value {
+  font-size: var(--wg-text-2xl);
+  font-weight: 660;
+  line-height: 1.1;
+  color: var(--wg-text);
+}
+
+.wga-stat__hint {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wga-quick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--wg-space-3);
+}
+
+.wga-quick__card {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  min-height: 68px;
+  padding: var(--wg-space-3) var(--wg-space-4);
+  background: var(--wg-card-bg);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-md);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--wg-transition-fast), background var(--wg-transition-fast);
+}
+
+.wga-quick__card:hover {
+  border-color: var(--wg-border-strong);
+  background: var(--wg-surface-raised);
+}
+
+.wga-quick__card:focus-visible {
+  outline: 2px solid var(--wg-green);
+  outline-offset: 2px;
+}
+
+.wga-quick__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--wg-radius-sm);
+  background: var(--wg-green-tint);
+  color: var(--wg-green);
+}
+
+.wga-quick__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.wga-quick__label {
+  font-size: var(--wg-text-base);
+  font-weight: 620;
+}
+
+.wga-quick__detail {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wga-quick__go {
+  display: grid;
+  place-items: center;
+  color: var(--wg-text-dim);
+}
+
+.wga-caps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-2);
+}
+
+.wga-cap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-1);
+  padding: var(--wg-space-3) var(--wg-space-4);
+  background: var(--wg-card-bg);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-md);
+}
+
+.wga-cap__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wg-space-3);
+}
+
+.wga-cap__label {
+  font-size: var(--wg-text-base);
+  font-weight: 600;
+}
+
+.wga-cap__badge {
+  flex: none;
+  padding: 1px var(--wg-space-3);
+  border-radius: 999px;
+  font-size: var(--wg-text-xs);
+  font-weight: 650;
+}
+
+.wga-cap--live {
+  background: var(--wg-green-tint);
+  color: var(--wg-success-text);
+}
+
+.wga-cap--waiting {
+  background: var(--wg-warn-bg);
+  color: var(--wg-warn-text);
+}
+
+.wga-cap--off {
+  background: var(--wg-surface-raised);
+  color: var(--wg-text-muted);
+}
+
+.wga-cap__reason {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+/* ---- Team --------------------------------------------------------------- */
+
+.wga-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-2);
+}
+
+.wga-member {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  padding: var(--wg-space-3);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-md);
+}
+
+.wga-member__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--wg-surface-raised);
+  color: var(--wg-text-label);
+}
+
+.wga-member__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.wga-member__name {
+  font-size: var(--wg-text-sm);
+  font-weight: 600;
+}
+
+.wga-member__email {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wga-member__role {
+  flex: none;
+  padding: 1px var(--wg-space-3);
+  border-radius: 999px;
+  background: var(--wg-green-tint);
+  color: var(--wg-success-text);
+  font-size: var(--wg-text-xs);
+  font-weight: 650;
+}
+
+/* ---- Gate (closed affordance) ------------------------------------------- */
+
+.wga-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--wg-space-3);
+  padding: var(--wg-space-4);
+  border: 1px dashed var(--wg-border-strong);
+  border-radius: var(--wg-radius-md);
+  background: var(--wg-surface-raised);
+}
+
+.wga-gate__badge {
+  padding: 2px var(--wg-space-3);
+  border-radius: 999px;
+  background: var(--wg-warn-bg);
+  border: 1px solid var(--wg-warn-border);
+  color: var(--wg-warn-text);
+  font-size: var(--wg-text-xs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.wga-gate__detail {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--wg-text-secondary);
+  font-size: var(--wg-text-sm);
+}
+
+.wga-gate__caveat {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--wg-text-muted);
+  font-size: var(--wg-text-xs);
+}
+
+/* ---- Features (pricing) ------------------------------------------------- */
+
+.wga-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wga-feature {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  padding: var(--wg-space-3) 0;
+  border-bottom: 1px solid var(--wg-border);
+}
+
+.wga-feature:last-child {
+  border-bottom: 0;
+}
+
+.wga-feature__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--wg-green);
+}
+
+.wga-feature__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.wga-feature__label {
+  font-size: var(--wg-text-sm);
+  font-weight: 620;
+}
+
+.wga-feature__detail {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wga-feature__state {
+  flex: none;
+  color: var(--wg-text-muted);
+  font-size: var(--wg-text-xs);
+  font-weight: 600;
+  text-align: right;
+}
+
+.wga-feature[data-wga-state='not_provisioned'] .wga-feature__mark {
+  color: var(--wg-text-dim);
+}
+
+/* ---- Responsive ---------------------------------------------------------
+ * Below 900px the sidebar becomes a horizontal scroller pinned under the top
+ * bar rather than collapsing into a toggle: with twelve destinations, a
+ * hamburger hides more than it reveals, and the full list is what makes the
+ * product legible on a phone.
+ */
+
+@media (max-width: 900px) {
+  .wga-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wga-sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    flex-direction: column;
+    padding: var(--wg-space-4) var(--wg-space-4) var(--wg-space-3);
+    border-right: 0;
+    border-bottom: 1px solid var(--wg-border);
+    gap: var(--wg-space-3);
+  }
+
+  .wga-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: var(--wg-space-3);
+    padding-bottom: var(--wg-space-2);
+    /* A horizontal scroller needs a scrollbar hint or it reads as clipped. */
+    scrollbar-width: thin;
+  }
+
+  .wga-nav__group {
+    flex-direction: row;
+    gap: var(--wg-space-1);
+    align-items: center;
+  }
+
+  .wga-nav__group-label,
+  .wga-sidebar__foot {
+    display: none;
+  }
+
+  .wga-nav__list {
+    flex-direction: row;
+  }
+
+  .wga-nav__link {
+    white-space: nowrap;
+  }
+
+  .wga-topbar {
+    padding: var(--wg-space-2) var(--wg-space-4);
+  }
+
+  .wga-page {
+    padding: var(--wg-space-5) var(--wg-space-4) var(--wg-space-7);
+  }
+
+  .wga-stats,
+  .wga-quick {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wga-def,
+  .wga-setting {
+    grid-template-columns: 1fr;
+    gap: var(--wg-space-1);
+  }
+}
+
+@media (max-width: 560px) {
+  .wga-stats,
+  .wga-quick {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wga-workspace__label,
+  .wga-plan__label {
+    display: none;
+  }
+
+  .wga-pagehead__title {
+    font-size: var(--wg-text-lg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wga-nav__link,
+  .wga-btn,
+  .wga-quick__card {
+    transition: none;
+  }
+}

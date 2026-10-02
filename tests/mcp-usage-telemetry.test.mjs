@@ -1,0 +1,507 @@
+// #4866 — /mcp emits wm_api_usage RequestEvents so MCP auth rejections,
+// quota hits, and successes are visible in Axiom (they were fully invisible
+// during the #4859 diagnosis: no gateway pass-through, no log drain).
+import { describe, it, beforeEach, afterEach } from 'node:test';
+import { strict as assert } from 'node:assert';
+import {
+  ANON_DISCOVERY_URL,
+  BASE_URL,
+  HMAC_SECRET,
+  PRO_BEARER,
+  makeProDeps,
+  proReq,
+  callBody,
+} from './helpers/mcp-pro-deps.mjs';
+
+function resourceReadBody(uri = 'worldmonitor://countries/de/risk', id = 100) {
+  return { jsonrpc: '2.0', id, method: 'resources/read', params: { uri } };
+}
+
+const originalFetch = globalThis.fetch;
+const originalEnv = { ...process.env };
+
+const USER_KEY = `wm_${'cd34'.repeat(10)}`;
+const USER_KEY_USER_ID = 'user_apiplan_xyz';
+
+function makeCtx() {
+  const pending = [];
+  return {
+    ctx: { waitUntil: (p) => pending.push(p) },
+    settle: () => Promise.allSettled(pending),
+  };
+}
+
+function captureAxiom() {
+  const events = [];
+  globalThis.fetch = async (url, init) => {
+    const href = String(url);
+    if (href.includes('axiom.co')) {
+      for (const ev of JSON.parse(init.body)) events.push(ev);
+      return new Response('{}', { status: 200 });
+    }
+    return new Response(JSON.stringify({ ok: 1 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  return events;
+}
+
+describe('api/mcp — usage telemetry (#4866)', () => {
+  let mcpHandler;
+
+  beforeEach(async () => {
+    process.env.WORLDMONITOR_VALID_KEYS = 'wm_env_key_1';
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    process.env.MCP_INTERNAL_HMAC_SECRET = HMAC_SECRET;
+    process.env.MCP_TELEMETRY = 'false';
+    process.env.USAGE_TELEMETRY = '1';
+    process.env.AXIOM_API_TOKEN = 'stub-token';
+    const mod = await import(`../api/mcp.ts?t=${Date.now()}`);
+    mcpHandler = mod.mcpHandler;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    Object.keys(process.env).forEach((k) => {
+      if (!(k in originalEnv)) delete process.env[k];
+    });
+    Object.assign(process.env, originalEnv);
+  });
+
+  for (const [status, retryAfter, reason] of [[429, '60', 'rate_limit_429'], [503, '5', 'rate_limit_degraded']]) {
+    it(`Google Dates downstream ${status} preserves backoff and usage through MCP dispatch`, async () => {
+      const { deps } = makeProDeps();
+      const events = captureAxiom();
+      const transport = globalThis.fetch;
+      globalThis.fetch = async (url, init) => String(url).includes('/api/aviation/v1/search-google-dates')
+        ? new Response(JSON.stringify({ error: 'private upstream detail' }), { status, headers: { 'Retry-After': retryAfter } })
+        : transport(url, init);
+      const { ctx, settle } = makeCtx();
+      const res = await mcpHandler(proReq('POST', callBody('search_flight_prices_by_date', {
+        origin: 'DXB', destination: 'LHR', start_date: '2026-10-01', end_date: '2026-10-31',
+      })), deps, ctx);
+      assert.equal(res.status, status);
+      assert.equal(res.headers.get('Retry-After'), retryAfter);
+      assert.equal(res.headers.get('Cache-Control'), 'no-store');
+      const payload = await res.json();
+      assert.equal(payload.error.code, status === 429 ? -32029 : -32603);
+      assert.ok(!JSON.stringify(payload).includes('private upstream detail'));
+      await settle();
+      assert.equal(events.length, 1);
+      assert.equal(events[0].status, status);
+      assert.equal(events[0].reason, reason);
+    });
+  }
+
+  it('anonymous tools/list emits an ok request event with origin_kind mcp', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(
+      new Request(BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }) }),
+      deps,
+      ctx,
+    );
+    assert.equal(res.status, 200);
+    await settle();
+    assert.equal(events.length, 1, 'exactly one request event per POST');
+    const ev = events[0];
+    assert.equal(ev.event_type, 'request');
+    assert.equal(ev.route, '/mcp');
+    assert.equal(ev.domain, 'mcp');
+    assert.equal(ev.origin_kind, 'mcp');
+    assert.equal(ev.method, 'POST');
+    assert.equal(ev.status, 200);
+    assert.equal(ev.auth_kind, 'anon');
+    assert.equal(ev.reason, 'ok');
+    assert.equal(ev.rpc_method, 'tools/list');
+    assert.equal(ev.tool_name, null);
+    // jsonResponse now advertises Content-Length, so a non-streamed JSON-RPC
+    // success must land a real byte count — never the pre-#8403 fake zero.
+    assert.equal(typeof ev.res_bytes, 'number');
+    assert.ok(ev.res_bytes > 0);
+  });
+
+  it('invalid wm_ key on tools/call emits status 401 reason auth_401 (the #4859 symptom, now visible)', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(
+      new Request(BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-WorldMonitor-Key': 'wm_bogus_key' }, body: JSON.stringify(callBody('describe_tool', { tool_name: 'get_market_data' })) }),
+      deps,
+      ctx,
+    );
+    assert.equal(res.status, 401);
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].status, 401);
+    assert.equal(events[0].reason, 'auth_401');
+    assert.equal(events[0].auth_kind, 'anon');
+  });
+
+  it('pro bearer with a RETRYABLE billing state emits tier_403 attributed to the userId', async () => {
+    // Fixture is deliberately a retryable marker rather than a confirmed lapse:
+    // since #6716 a CONFIRMED lapse means billing attempts are over and the
+    // account falls to the free tier (covered below), while an unverifiable
+    // read still denies. Keeping this case on the retryable marker preserves
+    // what the test is actually for — attribution on a tier denial.
+    const { deps } = makeProDeps({
+      getEntitlements: async () => ({
+        planKey: 'free',
+        features: { tier: 0, mcpAccess: false },
+        validUntil: 0,
+        billingStatus: 'renewal_verification_failed',
+      }),
+    });
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(proReq('POST', callBody('describe_tool', { tool_name: 'get_market_data' })), deps, ctx);
+    assert.notEqual(res.status, 200);
+    await settle();
+    assert.equal(events.length, 1);
+    const ev = events[0];
+    assert.equal(ev.auth_kind, 'mcp_oauth');
+    assert.equal(ev.customer_id, 'user_pro_xyz');
+  });
+
+  it('pro bearer with a CONFIRMED lapse is served on the free tier, still attributed (#6716)', async () => {
+    // A churned account is a free account: the request succeeds, and the
+    // telemetry must still name the user so the funnel can count them.
+    const { deps } = makeProDeps({
+      getEntitlements: async () => ({
+        planKey: 'free',
+        features: { tier: 0, mcpAccess: false },
+        validUntil: 0,
+        billingStatus: 'subscription_lapsed',
+      }),
+    });
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(proReq('POST', callBody('describe_tool', { tool_name: 'get_market_data' })), deps, ctx);
+    assert.equal(res.status, 200);
+    await settle();
+    assert.equal(events.length, 1);
+    const ev = events[0];
+    assert.equal(ev.auth_kind, 'mcp_oauth');
+    assert.equal(ev.customer_id, 'user_pro_xyz');
+  });
+
+  it('user_key describe_tool success attributes the key owner', async () => {
+    const { deps } = makeProDeps({
+      validateUserApiKey: async (k) => (k === USER_KEY ? { userId: USER_KEY_USER_ID } : null),
+      getEntitlements: async () => ({ planKey: 'api_starter', features: { tier: 2, mcpAccess: true }, validUntil: Date.now() + 86_400_000 }),
+    });
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(
+      new Request(BASE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-WorldMonitor-Key': USER_KEY }, body: JSON.stringify(callBody('describe_tool', { tool_name: 'get_market_data' })) }),
+      deps,
+      ctx,
+    );
+    assert.equal(res.status, 200);
+    await settle();
+    assert.equal(events.length, 1);
+    const ev = events[0];
+    assert.equal(ev.reason, 'ok');
+    assert.equal(ev.auth_kind, 'user_api_key');
+    assert.equal(ev.customer_id, USER_KEY_USER_ID);
+  });
+
+  it('pro bearer quota cap emits rate_limit_429', async () => {
+    const { deps } = makeProDeps({ pipelineOpts: { initialCount: 50 } });
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(proReq('POST', callBody('get_market_data')), deps, ctx);
+    assert.equal(res.status, 429);
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].reason, 'rate_limit_429');
+    assert.equal(events[0].status, 429);
+  });
+
+  it('OPTIONS preflight emits nothing', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    await mcpHandler(new Request(BASE_URL, { method: 'OPTIONS' }), deps, ctx);
+    await settle();
+    assert.equal(events.length, 0);
+  });
+
+  it('USAGE_TELEMETRY off emits nothing', async () => {
+    process.env.USAGE_TELEMETRY = '0';
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    await mcpHandler(proReq('POST', callBody('describe_tool', { tool_name: 'get_market_data' })), deps, ctx);
+    await settle();
+    assert.equal(events.length, 0);
+  });
+
+  it('resources/read mid-call billing 503 classifies as billing_verification_503, not rate_limit_degraded', async () => {
+    // #7269: resources/read used to drop X-Billing-Verification, so the handler
+    // classified 503 as dispatch → rate_limit_degraded. The marker must reach
+    // the outer classifier so Axiom records billing_verification_503.
+    const { deps } = makeProDeps();
+    const events = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('axiom.co')) {
+        for (const ev of JSON.parse(init.body)) events.push(ev);
+        return new Response('{}', { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({ error: 'Unable to verify API access', code: 'entitlement_verification_unavailable' }),
+        {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
+            'Retry-After': '5',
+            'X-Billing-Verification': 'entitlement_verification_unavailable',
+          },
+        },
+      );
+    };
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(proReq('POST', resourceReadBody()), deps, ctx);
+    assert.equal(res.status, 503);
+    assert.equal(res.headers.get('X-Billing-Verification'), 'entitlement_verification_unavailable');
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].status, 503);
+    assert.equal(events[0].reason, 'billing_verification_503');
+  });
+
+  it('resources/read mid-call confirmed-lapse 403 classifies as billing/tier_403', async () => {
+    // #7269: without the billing marker, a 403 is recorded as an ordinary
+    // precheck tier_403. The phase is still 'billing' so incidents stay
+    // distinguishable from status-only precheck denials.
+    const { deps } = makeProDeps();
+    const events = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('axiom.co')) {
+        for (const ev of JSON.parse(init.body)) events.push(ev);
+        return new Response('{}', { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({ error: 'Subscription lapsed', code: 'subscription_lapsed' }),
+        {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
+            'X-Billing-Verification': 'subscription_lapsed',
+          },
+        },
+      );
+    };
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(proReq('POST', resourceReadBody()), deps, ctx);
+    assert.equal(res.status, 403);
+    assert.equal(res.headers.get('X-Billing-Verification'), 'subscription_lapsed');
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].status, 403);
+    assert.equal(events[0].reason, 'tier_403');
+  });
+
+  it('emission failure never breaks the response (Axiom down)', async () => {
+    const { deps } = makeProDeps();
+    globalThis.fetch = async (url) => {
+      if (String(url).includes('axiom.co')) throw new Error('axiom exploded');
+      return new Response(JSON.stringify({ ok: 1 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    };
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(proReq('POST', callBody('describe_tool', { tool_name: 'get_market_data' })), deps, ctx);
+    assert.equal(res.status, 200);
+    await settle();
+  });
+
+  // #8403 — JSON-RPC method + tool name must be queryable, and missing
+  // Content-Length must not be recorded as a genuine zero-byte response.
+  it('tools/call records rpc_method and a registry-bounded tool_name (#8403)', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(proReq('POST', callBody('describe_tool', { tool_name: 'get_market_data' })), deps, ctx);
+    assert.equal(res.status, 200);
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].rpc_method, 'tools/call');
+    assert.equal(events[0].tool_name, 'describe_tool');
+    assert.equal(events[0].method, 'POST', 'HTTP method stays on method');
+  });
+
+  it('initialize / tools/list / tools/call are distinguishable by rpc_method (#8403)', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+
+    const listRes = await mcpHandler(
+      new Request(BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+      }),
+      deps,
+      ctx,
+    );
+    assert.equal(listRes.status, 200);
+
+    const initRes = await mcpHandler(
+      new Request(ANON_DISCOVERY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'initialize',
+          params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 't', version: '0' } },
+        }),
+      }),
+      deps,
+      ctx,
+    );
+    assert.equal(initRes.status, 200);
+
+    const callRes = await mcpHandler(proReq('POST', callBody('describe_tool', { tool_name: 'get_market_data' })), deps, ctx);
+    assert.equal(callRes.status, 200);
+
+    await settle();
+    const methods = events.map((e) => e.rpc_method).sort();
+    assert.deepEqual(methods, ['initialize', 'tools/call', 'tools/list']);
+    assert.equal(events.find((e) => e.rpc_method === 'tools/list')?.tool_name, null);
+    assert.equal(events.find((e) => e.rpc_method === 'initialize')?.tool_name, null);
+  });
+
+  it('unregistered tools/call name is not echoed into tool_name (#8403 cardinality)', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(
+      proReq('POST', callBody('totally_fake_tool_xyz', {})),
+      deps,
+      ctx,
+    );
+    // Dispatch may 200 with a JSON-RPC tool-not-found, or refuse — either way
+    // the usage row must not invent cardinality from client input.
+    assert.ok(res.status === 200 || res.status >= 400);
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].rpc_method, 'tools/call');
+    assert.equal(events[0].tool_name, null);
+  });
+
+  it('unknown JSON-RPC method collapses to _unregistered (#8403 cardinality)', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(
+      new Request(BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 99,
+          method: `invented.method.${'x'.repeat(200)}`,
+          params: {},
+        }),
+      }),
+      deps,
+      ctx,
+    );
+    assert.ok(res.status === 200 || res.status >= 400);
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].rpc_method, '_unregistered');
+    assert.equal(events[0].tool_name, null);
+  });
+
+  it('response without Content-Length does not record res_bytes: 0 (#8403)', async () => {
+    const { emitMcpRequestEvent, createMcpUsage } = await import('../api/mcp/usage.ts');
+    const events = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('axiom.co')) {
+        for (const ev of JSON.parse(init.body)) events.push(ev);
+        return new Response('{}', { status: 200 });
+      }
+      return new Response('{}', { status: 200 });
+    };
+    const pending = [];
+    const ctx = { waitUntil: (p) => pending.push(p) };
+    const usage = createMcpUsage();
+    usage.rpcMethod = 'tools/list';
+    const body = '{"jsonrpc":"2.0","id":1,"result":{"tools":[]}}';
+    // Chunked/streamed MCP responses omit Content-Length; Number(null)===0 was
+    // the defect — unknown size must be null/absent, never a fake zero.
+    const res = new Response(body, {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    assert.equal(res.headers.get('content-length'), null);
+    emitMcpRequestEvent(
+      new Request(BASE_URL, { method: 'POST', body: '{}' }),
+      res,
+      usage,
+      12,
+      ctx,
+    );
+    await Promise.allSettled(pending);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].res_bytes, null);
+    assert.notEqual(events[0].res_bytes, 0);
+  });
+
+  it('Content-Length when present is recorded as res_bytes (#8403)', async () => {
+    const { emitMcpRequestEvent, createMcpUsage } = await import('../api/mcp/usage.ts');
+    const events = [];
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('axiom.co')) {
+        for (const ev of JSON.parse(init.body)) events.push(ev);
+        return new Response('{}', { status: 200 });
+      }
+      return new Response('{}', { status: 200 });
+    };
+    const pending = [];
+    const ctx = { waitUntil: (p) => pending.push(p) };
+    const usage = createMcpUsage();
+    const body = '{"ok":true}';
+    const res = new Response(body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': String(new TextEncoder().encode(body).byteLength),
+      },
+    });
+    emitMcpRequestEvent(
+      new Request(BASE_URL, { method: 'POST', body: '{}' }),
+      res,
+      usage,
+      5,
+      ctx,
+    );
+    await Promise.allSettled(pending);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].res_bytes, new TextEncoder().encode(body).byteLength);
+  });
+
+  it('/api/mcp pathname emits the same rpc_method fields as /mcp (#8403)', async () => {
+    const { deps } = makeProDeps();
+    const events = captureAxiom();
+    const { ctx, settle } = makeCtx();
+    const res = await mcpHandler(
+      new Request('https://worldmonitor.app/api/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+      }),
+      deps,
+      ctx,
+    );
+    assert.equal(res.status, 200);
+    await settle();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].route, '/api/mcp');
+    assert.equal(events[0].rpc_method, 'tools/list');
+    assert.equal(events[0].tool_name, null);
+  });
+});

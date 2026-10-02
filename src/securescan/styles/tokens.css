@@ -1,0 +1,214 @@
+/*
+ * WM SecureScan design tokens.
+ *
+ * Self-contained under the `--ss-` namespace, so nothing here can collide with
+ * the dashboard's `--bg`/`--surface` system or with WorldGuard's `--wg-` tokens.
+ * SecureScan is dark-only: a security console that flips to a light theme
+ * changes the perceived contrast of the very evidence it exists to show.
+ *
+ * Every text token carries its measured contrast ratio against the surface it
+ * sits on, because "looks fine" is not a standard for evidence a reader has to
+ * be able to read. The severity ramp is deliberately not a pure hue rotation:
+ * `--ss-sev-medium` is orange rather than a darker yellow because a yellow
+ * that reads as "fine" is a failure mode for an amber-adjacent severity.
+ *
+ * Green is reserved. `--ss-green` is the brand accent *and* the positive state,
+ * so it is spent only on validated, verified, and pass — never on decoration.
+ * A UI where everything is green says nothing.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Surfaces -------------------------------------------------------- */
+  /* Four steps, each a real elevation. Anything more would flatten the table
+     and card hierarchy the console depends on. */
+  --ss-bg: #05080a;
+  --ss-surface: #0a0e12;
+  --ss-surface-2: #0e1319;
+  --ss-surface-3: #131a22;
+  --ss-field: #0b1015;
+  --ss-scrim: rgba(5, 8, 10, 0.86);
+
+  /* ---- Borders --------------------------------------------------------- */
+  --ss-border: rgba(148, 178, 200, 0.11);
+  --ss-border-strong: rgba(148, 178, 200, 0.2);
+  --ss-border-focus: rgba(74, 222, 128, 0.62);
+
+  /* ---- Text (contrast measured against --ss-bg) ------------------------ */
+  --ss-text: #e8eef2;          /* 15.9:1 */
+  --ss-text-secondary: #a7b6c2;  /*  7.4:1 */
+  --ss-text-muted: #7c8b98;      /*  4.8:1 */
+  --ss-text-dim: #5b6875;        /*  3.6:1 — non-text and large text only */
+  --ss-text-placeholder: #66727e;
+
+  /* ---- Brand / positive ------------------------------------------------ */
+  --ss-green: #22c55e;
+  --ss-green-bright: #4ade80;
+  --ss-green-text: #7ee2a8;     /* 10.1:1 — readable body text on --ss-bg */
+  --ss-green-bg: rgba(34, 197, 94, 0.13);
+  --ss-green-border: rgba(34, 197, 94, 0.34);
+  --ss-green-glow: rgba(34, 197, 94, 0.07);
+  --ss-on-green: #04130a;
+
+  /* ---- Severity ramp --------------------------------------------------- */
+  /* Each pair is (fill, border, readable text). The text value is what a badge
+     prints, so it is a separate token from the fill: a saturated red fill cannot
+     carry white body text at 4.5:1. */
+  --ss-sev-critical: #f4506b;
+  --ss-sev-critical-bg: rgba(244, 80, 107, 0.14);
+  --ss-sev-critical-border: rgba(244, 80, 107, 0.42);
+  --ss-sev-critical-text: #ffa8b6;
+
+  --ss-sev-high: #ef6a4b;
+  --ss-sev-high-bg: rgba(239, 106, 75, 0.13);
+  --ss-sev-high-border: rgba(239, 106, 75, 0.4);
+  --ss-sev-high-text: #ffb09c;
+
+  --ss-sev-medium: #e0a223;
+  --ss-sev-medium-bg: rgba(224, 162, 35, 0.13);
+  --ss-sev-medium-border: rgba(224, 162, 35, 0.38);
+  --ss-sev-medium-text: #f2cd82;
+
+  --ss-sev-low: #5aa9e6;
+  --ss-sev-low-bg: rgba(90, 169, 230, 0.12);
+  --ss-sev-low-border: rgba(90, 169, 230, 0.34);
+  --ss-sev-low-text: #a5d3f5;
+
+  --ss-sev-none: #7c8b98;
+  --ss-sev-none-bg: rgba(124, 139, 152, 0.1);
+  --ss-sev-none-border: rgba(124, 139, 152, 0.26);
+  --ss-sev-none-text: #b3c0cb;
+
+  /* ---- Validation states ----------------------------------------------- */
+  /* Distinct from severity on purpose. A candidate is not a "low severity
+     finding"; it is an unjudged observation, and the two axes must never be
+     collapsed into one colour. */
+  --ss-state-candidate: #e0a223;
+  --ss-state-validated: #22c55e;
+  --ss-state-remediation: #5aa9e6;
+  --ss-state-inconclusive: #7c8b98;
+  --ss-state-regression: #f4506b;
+  --ss-state-closed: #5b6875;
+
+  /* Fill/border/readable-text companions, same contract as the severity ramp.
+     A badge prints its text, so the text value is its own token: without these
+     a state badge had no rule of its own and fell back to `.ss-badge`'s
+     severity-axis fill, which is precisely the collapse the comment above
+     forbids. Text contrast against --ss-bg, measured:
+     candidate 13.2:1, remediation 12.7:1, inconclusive 10.8:1, closed 6.8:1,
+     regression 11.0:1, validated 11.9:1, verified 13.6:1. */
+  --ss-state-candidate-bg: rgba(224, 162, 35, 0.13);
+  --ss-state-candidate-border: rgba(224, 162, 35, 0.38);
+  --ss-state-candidate-text: #f2cd82;
+
+  --ss-state-remediation-bg: rgba(90, 169, 230, 0.12);
+  --ss-state-remediation-border: rgba(90, 169, 230, 0.34);
+  --ss-state-remediation-text: #a5d3f5;
+
+  /* A regression is a state, not a severity, even though it currently shares
+     the critical hue. Reusing --ss-sev-critical-* here would let a future
+     severity-ramp edit silently restyle a lifecycle badge. */
+  --ss-state-regression-bg: rgba(244, 80, 107, 0.14);
+  --ss-state-regression-border: rgba(244, 80, 107, 0.42);
+  --ss-state-regression-text: #ffa8b6;
+
+  --ss-state-inconclusive-bg: rgba(124, 139, 152, 0.1);
+  --ss-state-inconclusive-border: rgba(124, 139, 152, 0.26);
+  --ss-state-inconclusive-text: #b3c0cb;
+
+  /* Closed is the quietest state, so it gets the dimmest text that still clears
+     4.5:1 comfortably. */
+  --ss-state-closed-bg: rgba(91, 104, 117, 0.1);
+  --ss-state-closed-border: rgba(91, 104, 117, 0.24);
+  --ss-state-closed-text: #8b98a5;
+
+  /* VALIDATED and VERIFIED are the two states that had no rule of their own and
+     so rendered as `.ss-badge--good` -- the class `testStatusBadge` uses for PASS.
+     That made an analyst's "I have judged this" indistinguishable from a test's
+     "this passed", which is the same collapse in a different place: the badge for
+     a lifecycle state was borrowed from a different axis.
+
+     The two are separated rather than merged because they mean different things.
+     VALIDATED is a judgement that the weakness is real; nothing has re-checked it.
+     VERIFIED/FIXED is an outcome the engine reached by running a retest. Giving
+     them distinct hues keeps "judged" and "confirmed" readable as different facts,
+     and both stay off --ss-green-*, which is reserved for test status. */
+  --ss-state-validated-bg: rgba(34, 197, 94, 0.11);
+  --ss-state-validated-border: rgba(34, 197, 94, 0.3);
+  --ss-state-validated-text: #86d9a4;
+
+  --ss-state-verified-bg: rgba(45, 212, 191, 0.12);
+  --ss-state-verified-border: rgba(45, 212, 191, 0.34);
+  --ss-state-verified-text: #7fe6dc;
+
+  /* ---- Space ----------------------------------------------------------- */
+  --ss-space-1: 4px;
+  --ss-space-2: 8px;
+  --ss-space-3: 12px;
+  --ss-space-4: 16px;
+  --ss-space-5: 24px;
+  --ss-space-6: 32px;
+  --ss-space-7: 44px;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --ss-radius-xs: 3px;
+  --ss-radius-sm: 5px;
+  --ss-radius-md: 8px;
+  --ss-radius-lg: 12px;
+
+  /* ---- Type ------------------------------------------------------------ */
+  --ss-font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ss-font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  --ss-text-2xl: 22px;
+  --ss-text-xl: 18px;
+  --ss-text-lg: 15px;
+  --ss-text-md: 14px;
+  --ss-text-sm: 13px;
+  --ss-text-xs: 12px;
+  --ss-text-2xs: 11px;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --ss-ease: cubic-bezier(0.2, 0, 0, 1);
+  --ss-fast: 120ms;
+  --ss-base: 180ms;
+  --ss-slow: 320ms;
+
+  /* ---- Layout ---------------------------------------------------------- */
+  --ss-shell-max: 1560px;
+  --ss-sidebar: 232px;
+  --ss-control-height: 38px;
+  --ss-touch-target: 44px;
+}
+
+/*
+ * A single restrained green wash behind the whole console, plus a very low
+ * contrast grid. The grid exists to give panels an alignment structure without
+ * becoming a texture you notice; at this opacity it reads as graph paper, not
+ * as decoration.
+ */
+.ss-app {
+  min-height: 100vh;
+  background-color: var(--ss-bg);
+  background-image:
+    radial-gradient(120% 60% at 12% -8%, rgba(34, 197, 94, 0.05), transparent 60%),
+    linear-gradient(rgba(148, 178, 200, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 178, 200, 0.022) 1px, transparent 1px);
+  background-size: 100% 100%, 64px 64px, 64px 64px;
+  color: var(--ss-text);
+  font-family: var(--ss-font);
+  font-size: var(--ss-text-md);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-app *,
+  .ss-app *::before,
+  .ss-app *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,102 @@
+/* WorldGuard — Base styles (WM SecureScan)
+ *
+ * Note on fonts: there is deliberately no `@import` for Inter here. The
+ * catch-all Content-Security-Policy in vercel.json serves this page
+ * `style-src 'self' 'unsafe-inline'` and `font-src 'self' data:`, so
+ * fonts.googleapis.com and fonts.gstatic.com are both blocked — the import was
+ * a render-blocking request that could only ever fail. The stack in
+ * `--wg-font` uses a locally installed Inter when there is one and falls
+ * through to `system-ui`. To self-host the webfont instead, drop the woff2
+ * files under `public/fonts/` and add an `@font-face` here; `font-src 'self'`
+ * already permits it.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--wg-page-bg);
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--wg-page-bg);
+  color: var(--wg-text);
+  font-family: var(--wg-font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+#wg-root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: var(--wg-green);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+/* One focus treatment for the whole surface. The login inputs opt out of this
+ * in auth.css because the control around them draws a better ring. */
+:focus-visible {
+  outline: 2px solid var(--wg-green);
+  outline-offset: 2px;
+  border-radius: var(--wg-radius-xs);
+}
+
+/* Utility: visually hidden */
+.wg-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.wg-skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--wg-space-4);
+  z-index: 9999;
+  padding: var(--wg-space-2) var(--wg-space-4);
+  border-radius: var(--wg-radius-sm);
+  background: var(--wg-green);
+  color: var(--wg-on-green);
+  font-size: var(--wg-text-sm);
+  font-weight: 600;
+}
+
+.wg-skip-link:focus {
+  top: 0;
+}
+
+.wg-mono {
+  font-family: var(--wg-font-mono);
+  font-size: 0.92em;
+}

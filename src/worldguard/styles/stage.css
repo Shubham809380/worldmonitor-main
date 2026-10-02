@@ -1,0 +1,187 @@
+/* WorldGuard — Stage: the card, centred over a drifting full-bleed backdrop.
+ *
+ * The previous stage was a two-column marketing page (top bar, hero column,
+ * circuit traces, binary rain, bottom bar). The login card is now the whole
+ * page, so everything here serves one job: centre the card, hold it off the
+ * background, and never let it be cropped.
+ *
+ * The backdrop is `01.png`, a still. It was previously a screen recording of a
+ * sign-in page, which put a second login form behind this card — the image has
+ * no UI in it, so nothing needs to be blurred or cropped away.
+ *
+ * Layer order, all at z-index 0 with the card above them:
+ *   backdrop (graded plate) → glow → vignette
+ */
+
+.wg-stage {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  background: var(--wg-page-bg);
+  /* Belt-and-braces against a stray wide child producing a horizontal
+   * scrollbar on a 320px viewport. */
+  overflow-x: hidden;
+}
+
+/* ---- Moving backdrop ----------------------------------------------------- */
+
+.wg-stage__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--wg-page-bg);
+}
+
+/* The plate is 140% wide and starts 20% off to the left, so the pan always has
+ * image on both sides of the viewport: at either end of the animation the left
+ * edge sits between -12% and -28%, the right edge between 112% and 128%, which
+ * always covers 0..100%. Widening the plate rather than panning to the image
+ * edge is what lets the motion run forever without a visible seam — `01.png`
+ * does not tile. */
+.wg-stage__backdrop::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -20%;
+  width: 140%;
+  background: url('/worldguard/backdrop.webp') center / cover no-repeat;
+  /* Grade, don't blur. The source is near-black and very saturated green
+   * (mean luma ~9/255, R2 G30 B5 once composited), which reads as a flat green
+   * wash. Desaturating pulls the channels back toward a balanced near-black and
+   * a small brightness lift lets the highlight detail survive the vignette.
+   * Deliberately no `contrast()` — on content this dark a contrast pivot around
+   * 0.5 would crush every shadow to pure black. */
+  filter: saturate(0.7) brightness(1.12);
+  will-change: transform;
+  animation: wg-pan 42s var(--wg-ease) infinite alternate;
+}
+
+/* Pure horizontal travel, as asked. `alternate` rather than a wrap-around loop
+ * because the image's left and right edges do not match, so a wrap would jump. */
+@keyframes wg-pan {
+  from {
+    transform: translate3d(-6%, 0, 0);
+  }
+  to {
+    transform: translate3d(6%, 0, 0);
+  }
+}
+
+/* The single soft green glow. It drifts on its own slow clock and in the same
+ * direction as the plate, so it reads as one light source rather than two
+ * competing motions: the scale range is tiny and the opacity swing is under
+ * 0.02. */
+.wg-stage__glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    62% 46% at 50% 38%,
+    var(--wg-green-glow) 0%,
+    rgba(34, 197, 94, 0.03) 42%,
+    transparent 72%
+  );
+  transform-origin: 50% 38%;
+  animation: wg-breathe 18s var(--wg-ease) infinite alternate;
+}
+
+@keyframes wg-breathe {
+  from {
+    transform: scale(1);
+    opacity: 0.94;
+  }
+  to {
+    transform: scale(1.07);
+    opacity: 1;
+  }
+}
+
+/* Holds the centre steady behind the card and falls off through more stops than
+ * before, so the darkening reads as light falloff rather than a ring. */
+.wg-stage__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      74% 58% at 50% 46%,
+      rgba(4, 8, 6, 0.4) 0%,
+      rgba(4, 8, 6, 0.3) 34%,
+      rgba(4, 8, 6, 0.16) 58%,
+      rgba(4, 8, 6, 0.05) 76%,
+      transparent 92%
+    ),
+    linear-gradient(180deg, rgba(4, 8, 6, 0.5) 0%, transparent 20%, transparent 76%, rgba(4, 8, 6, 0.55) 100%),
+    linear-gradient(90deg, rgba(4, 8, 6, 0.42) 0%, transparent 24%, transparent 76%, rgba(4, 8, 6, 0.42) 100%);
+}
+
+.wg-stage__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  /* Vertical padding rather than a fixed height, so a short viewport scrolls
+   * the card into reach instead of clipping it. */
+  padding: var(--wg-space-5) var(--wg-space-4);
+  margin: 0 auto;
+}
+
+.wg-stage__right {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: var(--wg-card-width);
+}
+
+@media (max-width: 600px) {
+  .wg-stage__content {
+    padding: var(--wg-space-3) var(--wg-space-2);
+  }
+
+  /* The card is short on a 320px screen and the glow reads better a little
+   * higher up once there is no hero copy to balance it against. */
+  .wg-stage__glow {
+    background: radial-gradient(
+      78% 38% at 50% 32%,
+      var(--wg-green-glow) 0%,
+      rgba(34, 197, 94, 0.03) 46%,
+      transparent 74%
+    );
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  /* Slightly heavier side walls: on a narrow viewport the plate covers much
+   * less screen, so the vignette is what keeps the card off a busy area. */
+  .wg-stage__vignette {
+    background:
+      radial-gradient(
+        96% 54% at 50% 46%,
+        rgba(4, 8, 6, 0.52) 0%,
+        rgba(4, 8, 6, 0.34) 40%,
+        rgba(4, 8, 6, 0.14) 68%,
+        transparent 94%
+      ),
+      linear-gradient(180deg, rgba(4, 8, 6, 0.5) 0%, transparent 18%, transparent 74%, rgba(4, 8, 6, 0.55) 100%),
+      linear-gradient(90deg, rgba(4, 8, 6, 0.5) 0%, transparent 26%, transparent 74%, rgba(4, 8, 6, 0.5) 100%);
+  }
+}
+
+/* Every moving layer stops under reduced motion. The plate and the vignette are
+ * still a complete background at that point; only the dithering animation goes. */
+@media (prefers-reduced-motion: reduce) {
+  .wg-stage__backdrop::before,
+  .wg-stage__glow {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+}

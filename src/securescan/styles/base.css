@@ -1,0 +1,1210 @@
+/* WM SecureScan base layer: layout shell, navigation, and the component set. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* ---- Shell -------------------------------------------------------------- */
+
+.ss-shell {
+  display: grid;
+  grid-template-columns: var(--ss-sidebar) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.ss-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ss-space-5);
+  padding: var(--ss-space-5) var(--ss-space-4);
+  border-right: 1px solid var(--ss-border);
+  background: linear-gradient(180deg, var(--ss-surface), var(--ss-bg));
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.ss-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ss-space-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.ss-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--ss-green-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-green-bg);
+  color: var(--ss-green-text);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-sm);
+  font-weight: 700;
+}
+
+.ss-brand__name {
+  font-size: var(--ss-text-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.ss-brand__sub {
+  display: block;
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-2xs);
+  color: var(--ss-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ss-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ss-nav__group {
+  margin: var(--ss-space-4) 0 var(--ss-space-2);
+  padding-inline: var(--ss-space-3);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ss-text-dim);
+}
+
+.ss-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--ss-space-3);
+  padding: 9px var(--ss-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--ss-radius-sm);
+  color: var(--ss-text-secondary);
+  text-decoration: none;
+  font-size: var(--ss-text-sm);
+  transition: background var(--ss-fast) var(--ss-ease), color var(--ss-fast) var(--ss-ease);
+}
+
+.ss-nav__link:hover {
+  background: var(--ss-surface-2);
+  color: var(--ss-text);
+}
+
+.ss-nav__link[aria-current="page"] {
+  background: var(--ss-green-bg);
+  border-color: var(--ss-green-border);
+  color: var(--ss-green-text);
+}
+
+/* Keyboard focus must be unmistakable everywhere; the accent is the only
+   affordance a keyboard-only user has for position. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ss-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ss-radius-xs);
+}
+
+.ss-sidebar__foot {
+  margin-top: auto;
+  padding: var(--ss-space-3);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-surface);
+  font-size: var(--ss-text-xs);
+  color: var(--ss-text-muted);
+}
+
+.ss-sidebar__foot strong {
+  display: block;
+  color: var(--ss-text-secondary);
+  font-weight: 600;
+}
+
+.ss-main {
+  min-width: 0;
+  padding: var(--ss-space-5) var(--ss-space-6) var(--ss-space-7);
+}
+
+.ss-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ss-space-4);
+  margin-bottom: var(--ss-space-5);
+}
+
+.ss-page-title {
+  margin: 0;
+  font-size: var(--ss-text-2xl);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+}
+
+.ss-page-sub {
+  margin: var(--ss-space-1) 0 0;
+  color: var(--ss-text-secondary);
+  font-size: var(--ss-text-sm);
+  max-width: 74ch;
+}
+
+/* ---- Panels and cards --------------------------------------------------- */
+
+.ss-grid {
+  display: grid;
+  gap: var(--ss-space-4);
+}
+
+.ss-grid--metrics {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.ss-grid--2 {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+
+.ss-panel {
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-md);
+  background: var(--ss-surface);
+  overflow: hidden;
+}
+
+.ss-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ss-space-3);
+  padding: var(--ss-space-3) var(--ss-space-4);
+  border-bottom: 1px solid var(--ss-border);
+  background: var(--ss-surface-2);
+}
+
+.ss-panel__title {
+  margin: 0;
+  font-size: var(--ss-text-sm);
+  font-weight: 640;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ss-text-secondary);
+}
+
+.ss-panel__body {
+  padding: var(--ss-space-4);
+}
+
+.ss-panel__body--flush {
+  padding: 0;
+}
+
+/* ---- Metric tile -------------------------------------------------------- */
+
+.ss-metric {
+  padding: var(--ss-space-4);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-md);
+  background: var(--ss-surface);
+}
+
+.ss-metric__label {
+  display: block;
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ss-text-muted);
+}
+
+.ss-metric__value {
+  display: block;
+  margin-top: var(--ss-space-2);
+  font-family: var(--ss-font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ss-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ss-metric__hint {
+  display: block;
+  margin-top: var(--ss-space-1);
+  font-size: var(--ss-text-xs);
+  color: var(--ss-text-muted);
+}
+
+/* ---- Badges ------------------------------------------------------------- */
+
+.ss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid var(--ss-sev-none-border);
+  border-radius: 999px;
+  background: var(--ss-sev-none-bg);
+  color: var(--ss-sev-none-text);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* The dot is a redundant cue, never the only one: the badge always carries a
+   text label too, so the state survives greyscale, colour-blindness, and
+   high-contrast mode. */
+.ss-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.ss-badge--critical {
+  background: var(--ss-sev-critical-bg);
+  border-color: var(--ss-sev-critical-border);
+  color: var(--ss-sev-critical-text);
+}
+
+.ss-badge--high {
+  background: var(--ss-sev-high-bg);
+  border-color: var(--ss-sev-high-border);
+  color: var(--ss-sev-high-text);
+}
+
+.ss-badge--medium {
+  background: var(--ss-sev-medium-bg);
+  border-color: var(--ss-sev-medium-border);
+  color: var(--ss-sev-medium-text);
+}
+
+.ss-badge--low {
+  background: var(--ss-sev-low-bg);
+  border-color: var(--ss-sev-low-border);
+  color: var(--ss-sev-low-text);
+}
+
+.ss-badge--good {
+  background: var(--ss-green-bg);
+  border-color: var(--ss-green-border);
+  color: var(--ss-green-text);
+}
+
+.ss-badge--muted {
+  background: var(--ss-sev-none-bg);
+  border-color: var(--ss-sev-none-border);
+  color: var(--ss-sev-none-text);
+}
+
+.ss-badge--regression {
+  background: var(--ss-state-regression-bg);
+  border-color: var(--ss-state-regression-border);
+  color: var(--ss-state-regression-text);
+}
+
+/* Validation-state tones. These are a separate axis from severity, so they get
+   their own tokens rather than borrowing a severity fill: a candidate is an
+   unjudged observation, not a low-severity finding. */
+.ss-badge--candidate {
+  background: var(--ss-state-candidate-bg);
+  border-color: var(--ss-state-candidate-border);
+  color: var(--ss-state-candidate-text);
+}
+
+.ss-badge--remediation {
+  background: var(--ss-state-remediation-bg);
+  border-color: var(--ss-state-remediation-border);
+  color: var(--ss-state-remediation-text);
+}
+
+.ss-badge--inconclusive {
+  background: var(--ss-state-inconclusive-bg);
+  border-color: var(--ss-state-inconclusive-border);
+  color: var(--ss-state-inconclusive-text);
+}
+
+.ss-badge--closed {
+  background: var(--ss-state-closed-bg);
+  border-color: var(--ss-state-closed-border);
+  color: var(--ss-state-closed-text);
+}
+
+/* `validated` and `verified` are kept apart from `.ss-badge--good`, which belongs
+   to the test-status axis. A state badge that borrowed it would read as a PASS. */
+.ss-badge--validated {
+  background: var(--ss-state-validated-bg);
+  border-color: var(--ss-state-validated-border);
+  color: var(--ss-state-validated-text);
+}
+
+.ss-badge--verified {
+  background: var(--ss-state-verified-bg);
+  border-color: var(--ss-state-verified-border);
+  color: var(--ss-state-verified-text);
+}
+
+
+/* ---- Monospace metadata ------------------------------------------------- */
+
+.ss-meta {
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-xs);
+  color: var(--ss-text-muted);
+}
+
+.ss-kv {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  gap: var(--ss-space-2) var(--ss-space-4);
+  margin: 0;
+  font-size: var(--ss-text-sm);
+}
+
+.ss-kv dt {
+  color: var(--ss-text-muted);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-top: 2px;
+}
+
+.ss-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Tables ------------------------------------------------------------- */
+
+/* Scroll container rather than a clipped table: a security table that hides
+   columns is a security table that hides findings. */
+.ss-table-wrap {
+  overflow-x: auto;
+}
+
+.ss-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ss-text-sm);
+}
+
+.ss-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--ss-space-3) var(--ss-space-4);
+  background: var(--ss-surface-2);
+  border-bottom: 1px solid var(--ss-border);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ss-text-muted);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ss-table td {
+  padding: var(--ss-space-3) var(--ss-space-4);
+  border-bottom: 1px solid var(--ss-border);
+  vertical-align: top;
+}
+
+.ss-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ss-table tbody tr:hover {
+  background: var(--ss-surface-2);
+}
+
+.ss-table a {
+  color: var(--ss-text);
+  text-decoration-color: var(--ss-border-strong);
+  text-underline-offset: 3px;
+}
+
+.ss-table a:hover {
+  color: var(--ss-green-text);
+  text-decoration-color: var(--ss-green-border);
+}
+
+.ss-cell-id {
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-xs);
+  color: var(--ss-text-muted);
+  white-space: nowrap;
+}
+
+.ss-cell-num {
+  font-family: var(--ss-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+.ss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ss-space-2);
+  min-height: var(--ss-control-height);
+  padding: 0 var(--ss-space-4);
+  border: 1px solid var(--ss-border-strong);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-surface-2);
+  color: var(--ss-text);
+  font-family: inherit;
+  font-size: var(--ss-text-sm);
+  font-weight: 550;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--ss-fast) var(--ss-ease), border-color var(--ss-fast) var(--ss-ease);
+}
+
+.ss-btn:hover:not(:disabled) {
+  background: var(--ss-surface-3);
+  border-color: var(--ss-green-border);
+}
+
+.ss-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ss-btn--primary {
+  background: var(--ss-green-bg);
+  border-color: var(--ss-green-border);
+  color: var(--ss-green-text);
+}
+
+.ss-btn--primary:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: var(--ss-green);
+}
+
+.ss-btn--danger {
+  background: var(--ss-sev-critical-bg);
+  border-color: var(--ss-sev-critical-border);
+  color: var(--ss-sev-critical-text);
+}
+
+.ss-btn--sm {
+  min-height: 30px;
+  padding: 0 var(--ss-space-3);
+  font-size: var(--ss-text-xs);
+}
+
+.ss-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ss-space-2);
+}
+
+/* ---- Forms -------------------------------------------------------------- */
+
+.ss-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ss-label {
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-2xs);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ss-text-muted);
+}
+
+.ss-input,
+.ss-select,
+.ss-textarea {
+  width: 100%;
+  min-height: var(--ss-control-height);
+  padding: 8px 10px;
+  border: 1px solid var(--ss-border-strong);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-field);
+  color: var(--ss-text);
+  font-family: inherit;
+  font-size: var(--ss-text-sm);
+}
+
+.ss-textarea {
+  min-height: 96px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.ss-input::placeholder,
+.ss-textarea::placeholder {
+  color: var(--ss-text-placeholder);
+}
+
+/* Invalid fields are marked by a border, an icon in the message, and the word
+   "required" — never by colour alone. */
+.ss-input[aria-invalid="true"],
+.ss-select[aria-invalid="true"],
+.ss-textarea[aria-invalid="true"] {
+  border-color: var(--ss-sev-critical-border);
+}
+
+.ss-field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: var(--ss-text-xs);
+  color: var(--ss-sev-critical-text);
+}
+
+.ss-field__hint {
+  font-size: var(--ss-text-xs);
+  color: var(--ss-text-muted);
+}
+
+.ss-checkline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ss-space-3);
+  padding: var(--ss-space-3);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-surface-2);
+  font-size: var(--ss-text-sm);
+}
+
+/* ---- States ------------------------------------------------------------- */
+
+.ss-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--ss-space-3);
+  padding: var(--ss-space-7) var(--ss-space-5);
+  text-align: center;
+}
+
+.ss-state__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--ss-border-strong);
+  border-radius: var(--ss-radius-md);
+  background: var(--ss-surface-2);
+  color: var(--ss-text-muted);
+  font-family: var(--ss-font-mono);
+}
+
+.ss-state__title {
+  margin: 0;
+  font-size: var(--ss-text-lg);
+  font-weight: 620;
+}
+
+.ss-state__body {
+  margin: 0;
+  max-width: 58ch;
+  color: var(--ss-text-secondary);
+  font-size: var(--ss-text-sm);
+}
+
+/* An error state that still claims "everything is secure" is the single most
+   dangerous thing this UI could render, so the error copy never implies a
+   clean result. */
+.ss-state--error .ss-state__icon {
+  border-color: var(--ss-sev-critical-border);
+  background: var(--ss-sev-critical-bg);
+  color: var(--ss-sev-critical-text);
+}
+
+.ss-state--denied .ss-state__icon {
+  border-color: var(--ss-sev-medium-border);
+  background: var(--ss-sev-medium-bg);
+  color: var(--ss-sev-medium-text);
+}
+
+.ss-notice {
+  display: flex;
+  gap: var(--ss-space-3);
+  padding: var(--ss-space-3) var(--ss-space-4);
+  border: 1px solid var(--ss-border-strong);
+  border-left-width: 3px;
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-surface-2);
+  font-size: var(--ss-text-sm);
+  color: var(--ss-text-secondary);
+}
+
+.ss-notice--warn {
+  border-left-color: var(--ss-sev-medium);
+  background: var(--ss-sev-medium-bg);
+  color: var(--ss-sev-medium-text);
+}
+
+.ss-notice--danger {
+  border-left-color: var(--ss-sev-critical);
+  background: var(--ss-sev-critical-bg);
+  color: var(--ss-sev-critical-text);
+}
+
+.ss-notice--good {
+  border-left-color: var(--ss-green);
+  background: var(--ss-green-bg);
+  color: var(--ss-green-text);
+}
+
+.ss-notice__title {
+  font-weight: 620;
+  margin-bottom: 2px;
+}
+
+/* Indeterminate progress. A security tool that renders a fake percentage is
+   asserting a completion the backend has not reported. */
+.ss-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--ss-surface-3);
+  overflow: hidden;
+}
+
+.ss-progress__bar {
+  width: 34%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--ss-green), transparent);
+  animation: ss-sweep 1.4s var(--ss-ease) infinite;
+}
+
+@keyframes ss-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+
+/* ---- Code and evidence -------------------------------------------------- */
+
+.ss-code {
+  margin: 0;
+  padding: var(--ss-space-3);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-field);
+  color: var(--ss-text-secondary);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-xs);
+  line-height: 1.65;
+  overflow-x: auto;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.ss-evidence-line {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: var(--ss-space-3);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-xs);
+  line-height: 1.7;
+}
+
+.ss-evidence-line__no {
+  color: var(--ss-text-dim);
+  text-align: right;
+  user-select: none;
+}
+
+/* ---- Filter bar --------------------------------------------------------- */
+
+.ss-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ss-space-3);
+  align-items: flex-end;
+  padding: var(--ss-space-4);
+  border-bottom: 1px solid var(--ss-border);
+  background: var(--ss-surface-2);
+}
+
+.ss-filters .ss-field {
+  min-width: 168px;
+}
+
+.ss-mix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ss-space-2);
+}
+
+/* A zero-value bucket is not rendered as a bar. A bar of width 0 labelled
+   "CRITICAL 0" reads as a measurement that happened to find nothing. */
+.ss-mix__item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-surface-2);
+  font-size: var(--ss-text-xs);
+}
+
+.ss-mix__n {
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-sm);
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+.ss-mix__label {
+  color: var(--ss-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ---- Responsive --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .ss-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ss-sidebar {
+    position: static;
+    height: auto;
+    flex-direction: column;
+    border-right: none;
+    border-bottom: 1px solid var(--ss-border);
+  }
+
+  .ss-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .ss-nav__group {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+
+  .ss-main {
+    padding: var(--ss-space-4);
+  }
+}
+
+@media (max-width: 620px) {
+  .ss-main {
+    padding: var(--ss-space-3);
+  }
+
+  .ss-page-title {
+    font-size: var(--ss-text-xl);
+  }
+
+  .ss-grid--metrics {
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  }
+
+  /* Cards replace the table on narrow screens rather than scrolling it
+     sideways: on a phone a 7-column table is unreadable, not compact. */
+  .ss-table--stack thead {
+    display: none;
+  }
+
+  .ss-table--stack tbody tr {
+    display: block;
+    padding: var(--ss-space-3) var(--ss-space-4);
+    border-bottom: 1px solid var(--ss-border);
+  }
+
+  .ss-table--stack td {
+    display: grid;
+    grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
+    gap: var(--ss-space-3);
+    padding: 3px 0;
+    border: none;
+  }
+
+  .ss-table--stack td::before {
+    content: attr(data-label);
+    font-family: var(--ss-font-mono);
+    font-size: var(--ss-text-2xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ss-text-muted);
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Composition, forms, and record surfaces.
+ *
+ * These selectors are referenced by the console's pages but were never given a
+ * rule, so forms, the finding timeline, the report header, and every list
+ * rendered as unstyled block flow. They are defined here rather than patched
+ * per page so a new page inherits a working surface without knowing which
+ * classes happen to have rules yet.
+ *
+ * Sizing is deliberately not re-invented: `--sm` derives from the same
+ * `--ss-control-height` scale the base controls use, and the full 44px touch
+ * target is preserved for anything a finger has to hit.
+ * ----------------------------------------------------------------------- */
+
+.ss-form {
+  display: grid;
+  gap: var(--ss-space-4);
+  max-width: 640px;
+}
+
+.ss-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ss-space-2);
+}
+
+.ss-admin-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ss-space-2);
+  min-width: 0;
+}
+
+/* A form that carries its own submit lives in a narrower measure than the
+   page, because a 100%-wide text field is a bad target for a paragraph of
+   prose and hides how much text is being written. */
+.ss-form .ss-field__hint {
+  margin: 0;
+}
+
+.ss-input--sm,
+.ss-select--sm {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: var(--ss-text-xs);
+}
+
+.ss-input--textarea {
+  min-height: 96px;
+  padding: 8px 10px;
+  border: 1px solid var(--ss-border-strong);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-field);
+  color: var(--ss-text);
+  font-family: inherit;
+  font-size: var(--ss-text-sm);
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.ss-radio,
+.ss-checkbox {
+  accent-color: var(--ss-green);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+/* A checkbox with its label beside it. The label is the hit target, so the
+   whole row is clickable rather than just the 16px box. */
+.ss-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ss-space-2);
+  min-height: var(--ss-touch-target);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ss-check .ss-meta {
+  margin: 0;
+}
+
+.ss-form-status {
+  min-height: 20px;
+  font-size: var(--ss-text-sm);
+  color: var(--ss-text-secondary);
+}
+
+.ss-form-status--good {
+  color: var(--ss-green-text);
+}
+
+.ss-form-status--warn {
+  color: var(--ss-sev-medium-text);
+}
+
+.ss-form-status--danger {
+  color: var(--ss-sev-critical-text);
+}
+
+/* ---- Prose -------------------------------------------------------------- */
+
+.ss-paragraph {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--ss-text-secondary);
+  font-size: var(--ss-text-sm);
+  line-height: 1.6;
+}
+
+.ss-panel__subtitle {
+  margin: 0;
+  color: var(--ss-text);
+  font-size: var(--ss-text-lg);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ss-list,
+.ss-plain-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--ss-space-2);
+}
+
+.ss-plain-list {
+  list-style: disc;
+  padding-left: var(--ss-space-5);
+  gap: var(--ss-space-1);
+  color: var(--ss-text-secondary);
+  font-size: var(--ss-text-sm);
+}
+
+.ss-list li,
+.ss-plain-list li {
+  min-width: 0;
+}
+
+/* A verification failure list. This is the one list that reads as a stack of
+   individual problems, so each item is separated and carries a rule. */
+.ss-list--problems {
+  gap: 0;
+  border: 1px solid var(--ss-sev-critical-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-sev-critical-bg);
+  overflow: hidden;
+}
+
+.ss-list--problems li {
+  padding: var(--ss-space-2) var(--ss-space-3);
+  color: var(--ss-sev-critical-text);
+  font-size: var(--ss-text-sm);
+  font-family: var(--ss-font-mono);
+  word-break: break-word;
+}
+
+.ss-list--problems li + li {
+  border-top: 1px solid var(--ss-sev-critical-border);
+}
+
+.ss-pre {
+  margin: 0;
+  padding: var(--ss-space-3);
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-field);
+  color: var(--ss-text-secondary);
+  font-family: var(--ss-font-mono);
+  font-size: var(--ss-text-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ss-pre--scroll {
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* ---- Badge groups ------------------------------------------------------- */
+
+.ss-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ss-space-2);
+}
+
+.ss-badges--gap {
+  gap: var(--ss-space-3);
+}
+
+/* ---- Disclosure --------------------------------------------------------- */
+
+.ss-details {
+  border: 1px solid var(--ss-border);
+  border-radius: var(--ss-radius-sm);
+  background: var(--ss-surface-2);
+}
+
+.ss-details__summary {
+  padding: var(--ss-space-3);
+  cursor: pointer;
+  color: var(--ss-text-secondary);
+  font-size: var(--ss-text-sm);
+  list-style: none;
+}
+
+/* The marker is suppressed so the summary can carry its own disclosure glyph
+   and stay aligned with the rest of the console. */
+.ss-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.ss-details__summary::before {
+  content: "\25B8";
+  display: inline-block;
+  margin-right: var(--ss-space-2);
+  color: var(--ss-text-muted);
+  font-family: var(--ss-font-mono);
+}
+
+.ss-details[open] .ss-details__summary::before {
+  content: "\25BE";
+}
+
+.ss-details__summary:focus-visible {
+  outline: 2px solid var(--ss-border-focus);
+  outline-offset: -2px;
+  border-radius: var(--ss-radius-xs);
+}
+
+.ss-details > *:not(.ss-details__summary) {
+  border-top: 1px solid var(--ss-border);
+}
+
+/* ---- Identifiers -------------------------------------------------------- */
+
+.ss-cell-id--wrap {
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.45;
+}
+
+/* ---- Report header ------------------------------------------------------ */
+
+.ss-report__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ss-space-3);
+  padding-bottom: var(--ss-space-3);
+  border-bottom: 1px solid var(--ss-border);
+}
+
+.ss-report__title {
+  margin: 0;
+  color: var(--ss-text);
+  font-size: var(--ss-text-2xl);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+/* ---- Finding timeline ---------------------------------------------------
+ *
+ * The vertical rule is the point: a lifecycle history read as an undifferentiated
+ * list of rows loses the fact that these are ordered, irreversible steps. The
+ * rule is decorative, so it is hidden from assistive technology and the ordering
+ * is carried by the sequence number each row already prints.
+ * ----------------------------------------------------------------------- */
+
+.ss-timeline {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ss-timeline__item {
+  position: relative;
+  padding: 0 0 var(--ss-space-4) var(--ss-space-5);
+  border-left: 1px solid var(--ss-border-strong);
+}
+
+.ss-timeline__item:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+/* The node. A ring rather than a dot so it reads against the rule it sits on. */
+.ss-timeline__item::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--ss-bg);
+  background: var(--ss-text-muted);
+}
+
+.ss-timeline__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ss-space-2);
+  margin-top: var(--ss-space-1);
+  color: var(--ss-text-muted);
+  font-size: var(--ss-text-2xs);
+}
+
+.ss-timeline__body {
+  margin: var(--ss-space-1) 0 0;
+  color: var(--ss-text-secondary);
+  font-size: var(--ss-text-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---- Narrow screens ----------------------------------------------------- */
+
+@media (max-width: 620px) {
+  .ss-form {
+    max-width: none;
+  }
+
+  /* A filter group and an inline admin row both wrap rather than scroll
+     sideways: horizontal scrolling hides the controls that are off-screen. */
+  .ss-badges--gap > .ss-btn {
+    flex: 1 1 auto;
+  }
+
+  .ss-report__title {
+    font-size: var(--ss-text-xl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-details__summary::before {
+    transition: none;
+  }
+}

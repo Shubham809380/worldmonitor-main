@@ -1,0 +1,814 @@
+/* WorldGuard — Auth card (WM SecureScan sign-in)
+ *
+ * One card, centred, on a dark field. Everything inside shares the card's
+ * horizontal padding so the brand row, the heading, the alerts, the inputs and
+ * the buttons all sit on the same edge.
+ *
+ * The previous stylesheet was a glassmorphic panel: a neon green 0.5-alpha
+ * border, a 1px scan line travelling across the top, a glow that switched on
+ * after 2.5s, and 11px labels stacked inside a 56px input. Those are gone —
+ * a 1px white-0.08 border, one page-level glow, and 13px labels above 48px
+ * inputs.
+ */
+
+/* ---- Pass-through wrappers --------------------------------------------- */
+
+.wg-page--auth,
+.wg-auth,
+.wg-auth__main {
+  width: 100%;
+}
+
+/* ---- Card --------------------------------------------------------------- */
+
+.wg-auth__card {
+  position: relative;
+  width: 100%;
+  padding: var(--wg-card-padding);
+  background: var(--wg-card-bg);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-lg);
+  box-shadow: var(--wg-card-shadow);
+  /* Runs once. The card is built by the shell and never re-rendered by a form
+   * update, so this cannot replay on every keystroke. */
+  animation: wg-enter var(--wg-enter-duration) var(--wg-ease) both;
+}
+
+/* ---- Card header -------------------------------------------------------- */
+
+.wg-auth__head {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  /* 28px to the "Welcome back" heading below. */
+  margin-bottom: 28px;
+}
+
+.wg-auth__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--wg-radius-md);
+  background: var(--wg-green-tint);
+  color: var(--wg-green);
+}
+
+.wg-auth__identity {
+  min-width: 0;
+}
+
+.wg-auth__name {
+  font-size: var(--wg-text-lg);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--wg-text);
+  letter-spacing: -0.01em;
+}
+
+.wg-auth__tagline {
+  font-size: var(--wg-text-xs);
+  line-height: 1.35;
+  color: var(--wg-text-secondary);
+}
+
+.wg-auth__version {
+  margin-left: auto;
+  padding: 2px var(--wg-space-2);
+  border: 1px solid var(--wg-border);
+  border-radius: 999px;
+  font-family: var(--wg-font-mono);
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+  white-space: nowrap;
+}
+
+.wg-auth__body {
+  display: block;
+}
+
+/* ---- Form --------------------------------------------------------------- */
+
+.wg-form,
+.wg-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-4);
+}
+
+.wg-form__head {
+  display: flex;
+  flex-direction: column;
+}
+
+.wg-form__title {
+  font-size: var(--wg-text-2xl);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--wg-text);
+  letter-spacing: -0.02em;
+}
+
+.wg-form__sub {
+  margin-top: var(--wg-space-2);
+  font-size: var(--wg-text-base);
+  color: var(--wg-text-secondary);
+}
+
+/* No identity provider: the whole credential surface is dimmed and inert, so
+ * nothing here can be mistaken for a working sign-in. The notice above it keeps
+ * its link. */
+.wg-form__section.is-locked {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ---- Field -------------------------------------------------------------- */
+
+.wg-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-2);
+}
+
+.wg-field__label {
+  font-size: var(--wg-text-sm);
+  font-weight: 500;
+  color: var(--wg-text-label);
+}
+
+.wg-field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* 12px from the icon to the value. */
+  gap: var(--wg-space-3);
+  height: var(--wg-control-height);
+  padding: 0 var(--wg-space-3);
+  background: var(--wg-field-bg);
+  border: 1px solid var(--wg-field-border);
+  border-radius: var(--wg-radius-md);
+  transition:
+    border-color var(--wg-transition),
+    box-shadow var(--wg-transition),
+    background-color var(--wg-transition);
+}
+
+.wg-field__control:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Only the focused control carries the accent border and the 4px ring. */
+.wg-field__control:focus-within {
+  border-color: var(--wg-green);
+  box-shadow: 0 0 0 4px var(--wg-green-ring);
+}
+
+.wg-field__icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--wg-text-placeholder);
+  transition: color var(--wg-transition);
+}
+
+.wg-field__control:focus-within .wg-field__icon {
+  color: var(--wg-green);
+}
+
+.wg-field__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--wg-text);
+  font-size: var(--wg-text-md);
+  caret-color: var(--wg-green);
+  outline: none;
+}
+
+.wg-field__input::placeholder {
+  color: var(--wg-text-placeholder);
+}
+
+/* The control around it draws the focus ring, which is larger and offset
+ * outside the text box; a second outline here would double it up. */
+.wg-field__input:focus-visible {
+  outline: none;
+}
+
+.wg-field__input:disabled {
+  color: var(--wg-text-muted);
+  cursor: not-allowed;
+}
+
+/* Show/hide. A 44px square inside a 48px control keeps a comfortable tap area
+ * without changing the control's optical height. */
+.wg-field__affix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--wg-touch-target);
+  height: var(--wg-touch-target);
+  padding: 0;
+  border: none;
+  border-radius: var(--wg-radius-sm);
+  background: transparent;
+  color: var(--wg-text-placeholder);
+  transition:
+    color var(--wg-transition-fast),
+    background-color var(--wg-transition-fast);
+}
+
+.wg-field__affix:hover {
+  background: var(--wg-surface-raised);
+  color: var(--wg-text);
+}
+
+.wg-field__affix:focus-visible {
+  outline: 2px solid var(--wg-green);
+  outline-offset: -2px;
+}
+
+/* Enhancement only: lets the 44px affix sit flush against the right border. If
+ * `:has()` is unsupported the button just keeps its 12px inset. */
+.wg-field__control:has(.wg-field__affix) {
+  padding-right: 0;
+}
+
+.wg-field__hint {
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wg-field--invalid .wg-field__control {
+  border-color: var(--wg-danger);
+}
+
+.wg-field--invalid .wg-field__control:hover {
+  border-color: var(--wg-danger);
+}
+
+.wg-field--invalid .wg-field__control:focus-within {
+  border-color: var(--wg-danger);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+}
+
+.wg-field--invalid .wg-field__icon {
+  color: var(--wg-danger-text);
+}
+
+.wg-field__error {
+  font-size: var(--wg-text-xs);
+  line-height: 1.4;
+  color: var(--wg-danger-text);
+}
+
+/* ---- Form rows ---------------------------------------------------------- */
+
+.wg-form__row {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-2);
+}
+
+.wg-form__row--between {
+  justify-content: space-between;
+}
+
+.wg-form__row--center {
+  justify-content: center;
+}
+
+/* ---- Checkbox ----------------------------------------------------------- */
+
+.wg-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wg-space-2);
+  font-size: var(--wg-text-sm);
+  color: var(--wg-text-secondary);
+  cursor: pointer;
+  /* Keeps the 18px box and its label from wrapping on a narrow card. */
+  user-select: none;
+}
+
+.wg-check--block {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* Visually hidden but still focusable, so the checkbox keeps a real place in
+ * the tab order and a real voice-control target. */
+.wg-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.wg-check__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  background: var(--wg-field-bg);
+  border: 1px solid var(--wg-field-border);
+  border-radius: var(--wg-radius-xs);
+  color: transparent;
+  transition:
+    background-color var(--wg-transition-fast),
+    border-color var(--wg-transition-fast),
+    color var(--wg-transition-fast);
+}
+
+.wg-check:hover .wg-check__box {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.wg-check input:checked + .wg-check__box {
+  background: var(--wg-green);
+  border-color: var(--wg-green);
+  color: var(--wg-on-green);
+}
+
+.wg-check input:focus-visible + .wg-check__box {
+  outline: 2px solid var(--wg-green);
+  outline-offset: 2px;
+}
+
+.wg-check__label a {
+  color: var(--wg-green);
+}
+
+.wg-check__label a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- Links -------------------------------------------------------------- */
+
+.wg-form__link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--wg-text-sm);
+  color: var(--wg-text-secondary);
+  transition: color var(--wg-transition-fast);
+}
+
+.wg-form__link:hover:not(:disabled) {
+  color: var(--wg-text);
+}
+
+.wg-form__link--accent {
+  color: var(--wg-green);
+}
+
+.wg-form__link--accent:hover:not(:disabled) {
+  color: var(--wg-green-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.wg-form__link:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.wg-form__link--block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--wg-touch-target);
+}
+
+.wg-form__hint {
+  font-size: var(--wg-text-sm);
+  color: var(--wg-text-dim);
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+
+.wg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--wg-space-2);
+  height: var(--wg-control-height);
+  padding: 0 var(--wg-space-5);
+  border: 1px solid transparent;
+  border-radius: var(--wg-radius-md);
+  font-size: var(--wg-text-md);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color var(--wg-transition),
+    border-color var(--wg-transition),
+    color var(--wg-transition),
+    transform var(--wg-transition-fast),
+    filter var(--wg-transition-fast),
+    box-shadow var(--wg-transition-fast);
+}
+
+.wg-btn--primary {
+  background: var(--wg-green-gradient);
+  color: var(--wg-on-green);
+}
+
+.wg-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.22);
+}
+
+.wg-btn--primary:active:not(:disabled) {
+  filter: brightness(1);
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.wg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wg-btn--block {
+  width: 100%;
+}
+
+.wg-btn__spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(4, 19, 10, 0.25);
+  border-top-color: var(--wg-on-green);
+  border-radius: 50%;
+  animation: wg-spin 0.6s linear infinite;
+}
+
+.wg-btn--secondary {
+  background: var(--wg-field-bg);
+  border-color: var(--wg-border-strong);
+  color: var(--wg-text);
+  font-size: var(--wg-text-base);
+  font-weight: 500;
+}
+
+.wg-btn--secondary:hover:not(:disabled) {
+  background: var(--wg-surface-raised);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.wg-btn--secondary svg {
+  flex-shrink: 0;
+}
+
+/* ---- Divider ------------------------------------------------------------ */
+
+.wg-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-3);
+  font-size: var(--wg-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--wg-text-dim);
+}
+
+.wg-divider::before,
+.wg-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--wg-border);
+}
+
+/* ---- Alerts ------------------------------------------------------------- */
+
+.wg-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wg-space-2);
+  padding: var(--wg-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--wg-radius-md);
+  font-size: var(--wg-text-sm);
+  line-height: 1.5;
+}
+
+.wg-alert__icon {
+  display: flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.wg-alert__title {
+  font-size: var(--wg-text-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: var(--wg-space-1);
+}
+
+.wg-alert__body {
+  margin: 0;
+}
+
+.wg-alert--warn {
+  background: var(--wg-warn-bg);
+  border-color: var(--wg-warn-border);
+  color: var(--wg-warn-text);
+}
+
+.wg-alert--warn .wg-alert__icon,
+.wg-alert--warn .wg-alert__title {
+  color: var(--wg-warn);
+}
+
+.wg-alert--danger {
+  background: var(--wg-danger-bg);
+  border-color: var(--wg-danger-border);
+  color: var(--wg-danger-text);
+}
+
+.wg-alert--danger .wg-alert__icon {
+  color: var(--wg-danger);
+}
+
+.wg-alert--ok {
+  background: var(--wg-green-tint);
+  border-color: var(--wg-green-ring);
+  color: var(--wg-success-text);
+}
+
+.wg-alert--ok .wg-alert__icon {
+  color: var(--wg-green);
+}
+
+/* The one live control in a locked form, so it must not inherit the dim. */
+.wg-alert__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wg-space-1);
+  margin-top: var(--wg-space-2);
+  font-size: var(--wg-text-sm);
+  font-weight: 600;
+  color: var(--wg-warn-text);
+}
+
+.wg-alert__link:hover {
+  color: #f0dca8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- Inline note (one-time code, reset code) ---------------------------- */
+
+.wg-form__sent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wg-space-2);
+  padding: var(--wg-space-3);
+  background: var(--wg-field-bg);
+  border: 1px solid var(--wg-border);
+  border-radius: var(--wg-radius-md);
+  font-size: var(--wg-text-sm);
+  color: var(--wg-text-secondary);
+}
+
+.wg-form__sent svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--wg-green);
+}
+
+/* ---- Footer copy -------------------------------------------------------- */
+
+.wg-form__alt {
+  /* 16px from the row above plus 8px, so the sign-up prompt sits 24px under the
+   * Google button. */
+  margin-top: var(--wg-space-2);
+  padding-bottom: var(--wg-space-2);
+  font-size: var(--wg-text-base);
+  text-align: center;
+  color: var(--wg-text-muted);
+}
+
+.wg-form__alt .wg-form__link {
+  margin-left: var(--wg-space-1);
+}
+
+/* ---- Password meter (register) ------------------------------------------ */
+
+.wg-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wg-space-2);
+}
+
+.wg-meter__track {
+  height: 4px;
+  overflow: hidden;
+  background: var(--wg-field-bg);
+  border-radius: 999px;
+}
+
+.wg-meter__fill {
+  width: var(--fill, 0%);
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s, background-color 0.3s;
+}
+
+.wg-meter__fill--weak { background: var(--wg-danger); }
+.wg-meter__fill--fair { background: #f59e0b; }
+.wg-meter__fill--good { background: var(--wg-green); }
+.wg-meter__fill--strong { background: #06b6d4; }
+
+.wg-meter__requirements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wg-space-1) var(--wg-space-4);
+  list-style: none;
+  font-size: var(--wg-text-xs);
+  color: var(--wg-text-muted);
+}
+
+.wg-meter__requirement {
+  display: flex;
+  align-items: center;
+  gap: var(--wg-space-1);
+  transition: color var(--wg-transition);
+}
+
+.wg-meter__requirement.is-met {
+  color: var(--wg-success-text);
+}
+
+.wg-meter__tick {
+  display: inline-flex;
+  opacity: 0.3;
+  transition: opacity var(--wg-transition);
+}
+
+.wg-meter__requirement.is-met .wg-meter__tick {
+  opacity: 1;
+}
+
+/* ---- One-time code ------------------------------------------------------ */
+
+.wg-otp {
+  display: flex;
+  justify-content: center;
+  gap: var(--wg-space-2);
+}
+
+.wg-otp__box {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  background: var(--wg-field-bg);
+  border: 1px solid var(--wg-field-border);
+  border-radius: var(--wg-radius-md);
+  color: var(--wg-text);
+  font-family: var(--wg-font-mono);
+  font-size: var(--wg-text-2xl);
+  font-weight: 600;
+  caret-color: var(--wg-green);
+  outline: none;
+  transition:
+    border-color var(--wg-transition),
+    box-shadow var(--wg-transition);
+}
+
+.wg-otp__box:focus {
+  border-color: var(--wg-green);
+  box-shadow: 0 0 0 4px var(--wg-green-ring);
+}
+
+.wg-otp__box:disabled {
+  opacity: 0.4;
+}
+
+/* ---- Reset progress ----------------------------------------------------- */
+
+.wg-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.wg-steps__item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.wg-steps__line {
+  width: 48px;
+  height: 2px;
+  background: var(--wg-field-border);
+  transition: background-color var(--wg-transition);
+}
+
+.wg-steps__line.is-active {
+  background: var(--wg-green);
+}
+
+.wg-steps__dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 2px solid var(--wg-field-border);
+  border-radius: 50%;
+  color: var(--wg-text-muted);
+  font-size: var(--wg-text-xs);
+  font-weight: 600;
+  transition:
+    background-color var(--wg-transition),
+    border-color var(--wg-transition),
+    color var(--wg-transition);
+}
+
+.wg-steps__dot.is-active {
+  background: var(--wg-green-tint);
+  border-color: var(--wg-green);
+  color: var(--wg-green);
+}
+
+/* ---- Veil (session transition) ------------------------------------------ */
+
+.wg-veil {
+  position: absolute;
+  /* -1px so the veil covers the card's own border. */
+  inset: -1px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wg-scrim);
+  border-radius: var(--wg-radius-lg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.wg-veil[hidden] {
+  display: none !important;
+}
+
+.wg-veil__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wg-space-4);
+}
+
+.wg-veil__spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--wg-border-strong);
+  border-top-color: var(--wg-green);
+  border-radius: 50%;
+  animation: wg-spin 0.8s linear infinite;
+}
+
+.wg-veil__text {
+  font-size: var(--wg-text-base);
+  color: var(--wg-text-secondary);
+}
+
+/* ---- Responsive --------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .wg-auth__card {
+    padding: var(--wg-space-5);
+  }
+
+  /* A 420px card on a 320px screen has 272px of usable width; six OTP boxes
+   * cannot sit side by side, so they shrink instead of forcing a scrollbar. */
+  .wg-otp__box {
+    width: 40px;
+    height: 52px;
+  }
+
+  .wg-steps__line {
+    width: 32px;
+  }
+}

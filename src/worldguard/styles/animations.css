@@ -1,0 +1,49 @@
+/* WorldGuard — Motion
+ *
+ * Only the keyframes the auth card actually uses. The old file carried a
+ * cinematic boot sequence (circuit draw-on, node pulses, binary drift, a
+ * 2.5s-delayed border glow) that fought a login form: the card was invisible
+ * for two seconds and the border kept pulsing after it arrived. The card now
+ * arrives once, quickly, and then holds still.
+ */
+
+@keyframes wg-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wg-pulse-node {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

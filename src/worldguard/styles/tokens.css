@@ -1,0 +1,100 @@
+/* WorldGuard — Design tokens (WM SecureScan theme)
+ *
+ * One block, grouped by concern, so the theme can be re-skinned without reading
+ * any component stylesheet. Every colour below is either the brand green, a
+ * surface, or a text tone picked to clear WCAG AA (4.5:1) against the surface it
+ * sits on. Ratios are noted where they are load-bearing.
+ *
+ * Re-skinning: change `--wg-green*` for the accent, `--wg-card-bg` /
+ * `--wg-page-bg` for the surfaces, and `--wg-text*` for copy. Nothing else needs
+ * editing — components only reference these variables.
+ */
+
+:root {
+  /* ---- Brand accent ---------------------------------------------------- */
+  --wg-green: #22c55e;                 /* 8.5:1 on the card — links, focus     */
+  --wg-green-strong: #16a34a;          /* gradient start                          */
+  --wg-green-light: #4ade80;           /* gradient end, hover                     */
+  --wg-green-tint: rgba(34, 197, 94, 0.12);
+  --wg-green-ring: rgba(34, 197, 94, 0.15);   /* focus ring spread              */
+  --wg-green-glow: rgba(34, 197, 94, 0.09);  /* the single page glow           */
+  --wg-green-gradient: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  /* Text placed on top of the green gradient: 5.8:1 on --wg-green-strong. */
+  --wg-on-green: #04130a;
+
+  /* ---- Surfaces -------------------------------------------------------- */
+  --wg-page-bg: #060907;
+  --wg-card-bg: #0b0f0d;
+  --wg-field-bg: #111815;
+  --wg-surface-raised: rgba(255, 255, 255, 0.04);  /* hover fills            */
+  --wg-scrim: rgba(6, 9, 7, 0.82);
+
+  /* ---- Borders --------------------------------------------------------- */
+  --wg-border: rgba(255, 255, 255, 0.08);          /* card                  */
+  --wg-border-strong: rgba(255, 255, 255, 0.14);   /* secondary button      */
+  --wg-field-border: rgba(255, 255, 255, 0.10);    /* inputs                */
+
+  /* ---- Text ------------------------------------------------------------
+   * Ratios are against --wg-card-bg (#0B0F0D). Anything below 4.5:1 is only
+   * used for decoration, never for content.
+   */
+  --wg-text: #f2f5f3;                    /* 16.6:1 — headings, input values    */
+  --wg-text-label: #c5cec9;              /* 11.4:1 — field labels              */
+  --wg-text-secondary: #9aa5a0;          /* 7.6:1  — subtitles                 */
+  --wg-text-muted: #8a948f;              /* 6.2:1  — footer copy, version pill */
+  --wg-text-dim: #7d8783;                /* 5.2:1  — "OR" divider label        */
+  --wg-text-placeholder: #6b7570;        /* 4.1:1  — placeholder only, always
+                                           *   paired with a visible <label>   */
+
+  /* ---- Status ---------------------------------------------------------- */
+  --wg-warn: #f5b400;
+  --wg-warn-bg: rgba(245, 180, 0, 0.08);
+  --wg-warn-border: rgba(245, 180, 0, 0.25);
+  --wg-warn-text: #d9c58a;               /* 10.0:1 on the alert fill            */
+  --wg-danger: #ef4444;
+  --wg-danger-bg: rgba(239, 68, 68, 0.1);
+  --wg-danger-border: rgba(239, 68, 68, 0.28);
+  --wg-danger-text: #fca5a5;
+  --wg-success-text: #6ee7a0;
+
+  /* ---- Spacing: 8px grid ----------------------------------------------- */
+  --wg-space-1: 4px;
+  --wg-space-2: 8px;
+  --wg-space-3: 12px;
+  --wg-space-4: 16px;
+  --wg-space-5: 24px;
+  --wg-space-6: 32px;
+  --wg-space-7: 40px;
+  --wg-space-8: 48px;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --wg-radius-xs: 6px;                   /* checkbox                         */
+  --wg-radius-sm: 8px;                   /* chips                            */
+  --wg-radius-md: 12px;                  /* inputs, buttons, alerts, tiles   */
+  --wg-radius-lg: 20px;                  /* the card                         */
+
+  /* ---- Type scale: 28 / 16 / 15 / 14 / 13 / 12 ------------------------- */
+  --wg-text-2xl: 28px;                   /* card heading                        */
+  --wg-text-lg: 16px;                    /* brand name                          */
+  --wg-text-md: 15px;                    /* input values, primary button        */
+  --wg-text-base: 14px;                  /* subtitles, footer copy              */
+  --wg-text-sm: 13px;                    /* labels, alerts, links               */
+  --wg-text-xs: 12px;                    /* brand tagline, version pill, "OR"   */
+
+  --wg-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  --wg-font-mono: 'JetBrains Mono', 'SFMono-Regular', 'Cascadia Code', Consolas, monospace;
+
+  /* ---- Metrics --------------------------------------------------------- */
+  --wg-card-width: 420px;
+  --wg-card-padding: 32px;               /* 24px under 480px — see auth.css    */
+  --wg-card-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --wg-control-height: 48px;             /* inputs and both buttons             */
+  --wg-touch-target: 44px;               /* minimum comfortable hit area        */
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --wg-ease: cubic-bezier(0.2, 0, 0.2, 1);
+  --wg-transition: 180ms var(--wg-ease);
+  --wg-transition-fast: 150ms var(--wg-ease);
+  --wg-enter-duration: 300ms;
+}
